@@ -5,6 +5,9 @@ import requests
 import json
 import os
 from functools import wraps
+from collections import defaultdict
+import time
+from mysql.connector import Error
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
@@ -12,10 +15,6 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 # ----------------------------
 # Database connection
 # ----------------------------
-import time
-import mysql.connector
-from mysql.connector import Error
-
 db = None
 for i in range(10):  # retry 10 times
     try:
@@ -96,12 +95,12 @@ def logout():
     return redirect(url_for("login"))
 
 # ----------------------------
-# Dashboard
+# Dashboard Route
 # ----------------------------
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    # Fetch SMS reports for this user
+    # Fetch SMS logs for this user
     cursor = db.cursor(dictionary=True)
     cursor.execute("""
         SELECT DATE(sent_at) as day, dest, message, status, sent_at
@@ -112,15 +111,14 @@ def dashboard():
     sms_data = cursor.fetchall()
 
     # Group by day
-    from collections import defaultdict
     day_wise = defaultdict(list)
     for row in sms_data:
         day_wise[row["day"]].append(row)
 
-    return render_template("dashboard.html", username=session.get("username"), day_wise=day_wise)
+    return render_template("dashboard.html", username=session.get("username"), day_wise=day_wise, show_section=None)
 
 # ----------------------------
-# Send SMS Route
+# Send SMS Route (AJAX enabled)
 # ----------------------------
 @app.route("/send_sms", methods=["POST"])
 @login_required
@@ -129,40 +127,32 @@ def send_sms():
     message_text = request.form.get("message")
 
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
-    api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="  # <-- Replace with your actual API key
+    api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="
 
     payload = {
         "ver": "1.0",
         "key": api_key,
         "encrypt": "0",
-        "messages": [
-            {
-                "dest": [number],
-                "text": message_text,
-                "send": "KARIXM",
-                "vp": 30,
-                "cust_ref": "cust_ref",
-                "lang": "PM"
-            }
-        ]
+        "messages": [{"dest": [number], "text": message_text, "send": "KARIXM","vp":30,"cust_ref":"cust_ref","lang":"PM"}]
     }
 
     headers = {"Content-Type": "application/json"}
     status = "Failed"
+    message_flash = ""
 
     try:
         response = requests.post(api_url, headers=headers, data=json.dumps(payload))
         if response.status_code == 200:
-            flash("SMS sent successfully!", "success")
             status = "Sent"
+            message_flash = "✅ SMS sent successfully!"
         else:
-            flash(f"Failed to send SMS: {response.text}", "error")
             status = f"Error: {response.text}"
+            message_flash = f"⚠️ Failed to send SMS: {response.text}"
     except Exception as e:
-        flash(f"Error sending SMS: {str(e)}", "error")
         status = f"Exception: {str(e)}"
+        message_flash = f"⚠️ Error sending SMS: {str(e)}"
 
-    # Log SMS in database
+    # Log SMS
     cursor = db.cursor()
     cursor.execute(
         "INSERT INTO sms_logs (user_id, dest, message, status) VALUES (%s, %s, %s, %s)",
@@ -170,27 +160,46 @@ def send_sms():
     )
     db.commit()
 
+    # Return JSON if AJAX request
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return {"status": status, "message": message_flash}
+
+    # Fallback
+    flash(message_flash)
     return redirect(url_for("dashboard"))
+
 # ----------------------------
-# Placeholder Reports Route
+# Reports Route (AJAX day filter)
 # ----------------------------
 @app.route("/reports")
 @login_required
 def reports():
+    day_filter = request.args.get("day")
     cursor = db.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT DATE(sent_at) as day, dest, message, status, sent_at
-        FROM sms_logs
-        WHERE user_id = %s
-        ORDER BY sent_at DESC
-    """, (session["user_id"],))
-    sms_data = cursor.fetchall()
 
-    # Group by day
-    from collections import defaultdict
+    if day_filter:
+        cursor.execute("""
+            SELECT DATE(sent_at) as day, dest, message, status, sent_at
+            FROM sms_logs
+            WHERE user_id=%s AND DATE(sent_at)=%s
+            ORDER BY sent_at DESC
+        """, (session["user_id"], day_filter))
+    else:
+        cursor.execute("""
+            SELECT DATE(sent_at) as day, dest, message, status, sent_at
+            FROM sms_logs
+            WHERE user_id=%s
+            ORDER BY sent_at DESC
+        """, (session["user_id"],))
+
+    sms_data = cursor.fetchall()
     day_wise = defaultdict(list)
     for row in sms_data:
         day_wise[row["day"]].append(row)
+
+    # If AJAX request, return only table HTML
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return render_template("_report_table.html", day_wise=day_wise)
 
     return render_template("reports.html", day_wise=day_wise)
 

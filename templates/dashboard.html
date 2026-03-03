@@ -7,10 +7,9 @@
 body {
     margin: 0;
     font-family: "Segoe UI", sans-serif;
-    background: linear-gradient(135deg, #ff6ec7, #845ec2, #00c6ff); /* Pink → Purple → Cyan */
+    background: linear-gradient(135deg, #ff6ec7, #845ec2, #00c6ff);
     color: #fff;
 }
-
 header {
     padding: 20px;
     text-align: center;
@@ -25,12 +24,11 @@ header {
     position: fixed;
     top: 0;
     left: 0;
-    background: linear-gradient(180deg, #0b3d91, #1a5bb8); /* Darker blues */
+    background: linear-gradient(180deg, #0b3d91, #1a5bb8);
     padding-top: 60px;
     display: flex;
     flex-direction: column;
 }
-
 .sidebar button {
     background: none;
     border: none;
@@ -43,7 +41,6 @@ header {
     border-left: 4px solid transparent;
     transition: all 0.3s;
 }
-
 .sidebar button:hover, .sidebar button.active {
     background: rgba(255,255,255,0.2);
     border-left: 4px solid #fff;
@@ -54,14 +51,12 @@ header {
     margin-left: 200px;
     padding: 40px;
 }
-
 .card {
     background: rgba(255,255,255,0.1);
     padding: 20px;
     border-radius: 12px;
     margin-bottom: 20px;
 }
-
 input, textarea, button {
     width: 100%;
     padding: 10px;
@@ -69,25 +64,21 @@ input, textarea, button {
     border-radius: 8px;
     border: none;
 }
-
 button.submit-btn {
     background: linear-gradient(135deg, #00c6ff, #0072ff);
     color: white;
     font-weight: bold;
     cursor: pointer;
 }
-
 button.submit-btn:hover {
     opacity: 0.9;
 }
-
 .flash {
     margin: 10px 0;
     padding: 10px;
     border-radius: 8px;
     background: rgba(0,0,0,0.3);
 }
-
 .logout-btn {
     position: fixed;
     bottom: 20px;
@@ -101,14 +92,17 @@ button.submit-btn:hover {
     border-radius: 8px;
     cursor: pointer;
 }
-
 .logout-btn:hover {
     opacity: 0.9;
 }
-
 /* Hide sections by default */
 .section {
     display: none;
+}
+table th, table td {
+    padding: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    text-align: left;
 }
 </style>
 </head>
@@ -127,7 +121,7 @@ button.submit-btn:hover {
     <!-- Welcome Section -->
     <div id="welcome-section" class="section" style="display:block;">
         <div class="card">
-            <h2>Welcome {{ session.get('username', 'User') }}!</h2>
+            <h2>Welcome {{ username }}!</h2>
             <p>Welcome to <strong>SanReach</strong> – your SMS dashboard.</p>
             <p>Select an option from the left to get started.</p>
         </div>
@@ -137,14 +131,8 @@ button.submit-btn:hover {
     <div id="send-section" class="section">
         <div class="card">
             <h3>Send SMS</h3>
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, msg in messages %}
-                  <div class="flash">{{ msg }}</div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-            <form method="POST" action="{{ url_for('send_sms') }}">
+
+            <form id="sms-form">
                 <label>Recipient Number</label>
                 <input type="text" name="number" placeholder="e.g. 917989106669" required>
 
@@ -153,62 +141,111 @@ button.submit-btn:hover {
 
                 <button type="submit" class="submit-btn">Send SMS</button>
             </form>
+
+            <div id="sms-response" style="margin-top:10px;"></div>
         </div>
     </div>
 
- <!-- Reports Section -->
-<div id="report-section" class="section">
-    <div class="card">
-        <h3>Reports</h3>
-        {% if day_wise %}
-            {% for day, logs in day_wise.items() %}
+    <!-- Reports Section -->
+    <div id="report-section" class="section">
+        <div class="card">
+            <h3>Reports</h3>
+
+            <label>Filter by Date:</label>
+            <input type="date" id="report-date" name="report-date">
+
+            <div id="report-table">
+                {% for day, logs in day_wise.items() %}
                 <h4>{{ day }}</h4>
                 <table style="width:100%; border-collapse: collapse; margin-bottom: 20px;">
                     <thead>
                         <tr style="background: rgba(255,255,255,0.2);">
-                            <th style="padding:8px;">Recipient</th>
-                            <th style="padding:8px;">Message</th>
-                            <th style="padding:8px;">Status</th>
-                            <th style="padding:8px;">Sent At</th>
+                            <th>Recipient</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Sent At</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for sms in logs %}
                         <tr style="background: rgba(255,255,255,0.05);">
-                            <td style="padding:8px;">{{ sms.dest }}</td>
-                            <td style="padding:8px;">{{ sms.message }}</td>
-                            <td style="padding:8px;">{{ sms.status }}</td>
-                            <td style="padding:8px;">{{ sms.sent_at }}</td>
+                            <td>{{ sms.dest }}</td>
+                            <td>{{ sms.message }}</td>
+                            <td>{{ sms.status }}</td>
+                            <td>{{ sms.sent_at }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            {% endfor %}
-        {% else %}
-            <p>No SMS records found.</p>
-        {% endif %}
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
+// Section toggle
 const buttons = document.querySelectorAll(".toggle-btn");
 const sections = document.querySelectorAll(".section");
 
+function showSection(id) {
+    buttons.forEach(b => b.classList.remove("active"));
+    const btn = document.querySelector(`.toggle-btn[data-target="${id}"]`);
+    if(btn) btn.classList.add("active");
+    sections.forEach(sec => sec.style.display = "none");
+    const target = document.getElementById(id);
+    if(target) target.style.display = "block";
+}
+
+// Default section
+{% if show_section %}
+showSection("{{ show_section }}");
+{% else %}
+showSection("welcome-section");
+{% endif %}
+
+// Sidebar click
 buttons.forEach(btn => {
-    btn.addEventListener("click", () => {
-        // Remove active from all buttons
-        buttons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
+    btn.addEventListener("click", () => { showSection(btn.dataset.target); });
+});
 
-        // Hide all sections
-        sections.forEach(sec => sec.style.display = "none");
-
-        // Show target section
-        const target = document.getElementById(btn.dataset.target);
-        if(target) target.style.display = "block";
+// AJAX Send SMS
+document.getElementById("sms-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch("{{ url_for('send_sms') }}", {
+        method: "POST",
+        headers: {"X-Requested-With": "XMLHttpRequest"},
+        body: formData
+    })
+    .then(res => res.json())
+    .then(res => {
+        const respDiv = document.getElementById("sms-response");
+        respDiv.innerHTML = res.message;
+        respDiv.style.color = res.status === "Sent" ? "lightgreen" : "orange";
+        if(res.status === "Sent") this.reset();
+        // Optionally refresh reports after sending
+        fetchReports();
+    })
+    .catch(err => {
+        const respDiv = document.getElementById("sms-response");
+        respDiv.innerHTML = "⚠️ Error sending SMS";
+        respDiv.style.color = "orange";
     });
 });
-</script>
 
+// AJAX Reports filter
+document.getElementById("report-date").addEventListener("change", function(){
+    fetchReports(this.value);
+});
+
+function fetchReports(date=null){
+    let url = `/reports`;
+    if(date) url += `?day=${date}`;
+    fetch(url, {headers: {"X-Requested-With":"XMLHttpRequest"}})
+    .then(res => res.text())
+    .then(html => { document.getElementById("report-table").innerHTML = html; });
+}
+</script>
 </body>
 </html>
