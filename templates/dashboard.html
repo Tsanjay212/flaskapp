@@ -18,7 +18,7 @@
   --border:#e5e7eb;
 }
 
-/* Dark Mode Variables */
+/* Dark Mode */
 body.dark{
   --bg-main:#111827;
   --bg-card:#1f2937;
@@ -38,18 +38,20 @@ body{
   transition:0.3s;
 }
 
+/* Header */
 header{
-  padding:20px;
+  height:70px;
   display:flex;
   justify-content:space-between;
   align-items:center;
-  font-size:1.5em;
+  padding:0 30px;
+  font-size:1.4em;
   font-weight:bold;
   background:var(--bg-card);
   border-bottom:1px solid var(--border);
 }
 
-/* Toggle Button */
+/* Toggle */
 .theme-toggle{
   cursor:pointer;
   background:var(--primary);
@@ -57,7 +59,6 @@ header{
   border:none;
   padding:8px 15px;
   border-radius:20px;
-  font-size:14px;
 }
 
 .theme-toggle:hover{
@@ -66,15 +67,19 @@ header{
 
 /* Sidebar */
 .sidebar{
-  height:100vh;
-  width:220px;
   position:fixed;
-  top:0;
+  top:70px; /* below header */
   left:0;
+  width:220px;
+  height:calc(100vh - 70px);
   background:var(--sidebar-bg);
-  padding-top:80px;
   display:flex;
   flex-direction:column;
+  justify-content:space-between;
+}
+
+.sidebar-menu{
+  padding-top:20px;
 }
 
 .sidebar button{
@@ -84,6 +89,7 @@ header{
   text-align:left;
   padding:14px 20px;
   cursor:pointer;
+  width:100%;
   border-left:4px solid transparent;
   transition:0.3s;
 }
@@ -94,11 +100,13 @@ header{
   border-left:4px solid var(--primary);
 }
 
+/* Logout */
+.logout-container{
+  padding:20px;
+}
+
 .logout-btn{
-  position:absolute;
-  bottom:20px;
-  left:20px;
-  width:180px;
+  width:100%;
   background:var(--danger);
   color:white;
   font-weight:bold;
@@ -108,11 +116,17 @@ header{
   cursor:pointer;
 }
 
+.logout-btn:hover{
+  opacity:0.9;
+}
+
+/* Main */
 .main{
   margin-left:220px;
   padding:40px;
 }
 
+/* Card */
 .card{
   background:var(--bg-card);
   padding:20px;
@@ -147,22 +161,6 @@ button.submit-btn:hover{
 }
 
 .section{display:none;}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-
-table th{
-  padding:10px;
-  background:var(--sidebar-hover);
-  color:var(--text-light);
-}
-
-table td{
-  padding:10px;
-  border:1px solid var(--border);
-}
 </style>
 </head>
 
@@ -174,11 +172,18 @@ table td{
 </header>
 
 <div class="sidebar">
-    <button class="toggle-btn" data-target="send-section">Send SMS</button>
-    <button class="toggle-btn" data-target="report-section">Reports</button>
-    <form method="GET" action="{{ url_for('logout') }}">
-        <button class="logout-btn" type="submit">Logout</button>
-    </form>
+  
+  <div class="sidebar-menu">
+      <button class="toggle-btn" data-target="send-section">Send SMS</button>
+      <button class="toggle-btn" data-target="report-section">Reports</button>
+  </div>
+
+  <div class="logout-container">
+      <form method="GET" action="{{ url_for('logout') }}">
+          <button class="logout-btn" type="submit">Logout</button>
+      </form>
+  </div>
+
 </div>
 
 <div class="main">
@@ -186,30 +191,25 @@ table td{
 <div id="welcome-section" class="section">
   <div class="card">
     <h2>Welcome {{ username }}!</h2>
-    <p>Welcome to <strong>SanReach</strong>.</p>
+    <p>Select an option from the sidebar.</p>
   </div>
 </div>
 
 <div id="send-section" class="section">
   <div class="card">
     <h3>Send SMS</h3>
-    <form id="sms-form">
-      <input type="text" name="number" placeholder="Recipient number" required>
-      <textarea name="message" rows="4" placeholder="Your message..." required></textarea>
-      <button type="submit" class="submit-btn">Send SMS</button>
+    <form>
+      <input type="text" placeholder="Recipient number" required>
+      <textarea rows="4" placeholder="Your message..." required></textarea>
+      <button class="submit-btn">Send SMS</button>
     </form>
-    <div id="sms-response" style="margin-top:10px;font-weight:bold;"></div>
   </div>
 </div>
 
 <div id="report-section" class="section">
   <div class="card">
     <h3>Reports</h3>
-    <div id="report-table">
-      {% if not day_wise %}
-      <p>No SMS records found.</p>
-      {% endif %}
-    </div>
+    <p>No SMS records found.</p>
   </div>
 </div>
 
@@ -231,7 +231,6 @@ function toggleTheme(){
   }
 }
 
-// Load Saved Theme
 window.onload=function(){
   const savedTheme=localStorage.getItem("theme");
   if(savedTheme==="dark"){
@@ -240,7 +239,7 @@ window.onload=function(){
   }
 };
 
-// Section toggle
+// Section Toggle
 const buttons=document.querySelectorAll(".toggle-btn");
 const sections=document.querySelectorAll(".section");
 
