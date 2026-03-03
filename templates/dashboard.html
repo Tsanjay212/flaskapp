@@ -156,13 +156,37 @@ button.submit-btn:hover {
         </div>
     </div>
 
-    <!-- Reports Section -->
-    <div id="report-section" class="section">
-        <div class="card">
-            <h3>Reports</h3>
-            <p>View sent messages, delivery status, and analytics here.</p>
-            <a href="{{ url_for('reports') }}"><button class="submit-btn">View Reports</button></a>
-        </div>
+ <!-- Reports Section -->
+<div id="report-section" class="section">
+    <div class="card">
+        <h3>Reports</h3>
+        {% if day_wise %}
+            {% for day, logs in day_wise.items() %}
+                <h4>{{ day }}</h4>
+                <table style="width:100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.2);">
+                            <th style="padding:8px;">Recipient</th>
+                            <th style="padding:8px;">Message</th>
+                            <th style="padding:8px;">Status</th>
+                            <th style="padding:8px;">Sent At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sms in logs %}
+                        <tr style="background: rgba(255,255,255,0.05);">
+                            <td style="padding:8px;">{{ sms.dest }}</td>
+                            <td style="padding:8px;">{{ sms.message }}</td>
+                            <td style="padding:8px;">{{ sms.status }}</td>
+                            <td style="padding:8px;">{{ sms.sent_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        {% else %}
+            <p>No SMS records found.</p>
+        {% endif %}
     </div>
 </div>
 

@@ -101,7 +101,23 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", username=session.get("username"))
+    # Fetch SMS reports for this user
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT DATE(sent_at) as day, dest, message, status, sent_at
+        FROM sms_logs
+        WHERE user_id = %s
+        ORDER BY sent_at DESC
+    """, (session["user_id"],))
+    sms_data = cursor.fetchall()
+
+    # Group by day
+    from collections import defaultdict
+    day_wise = defaultdict(list)
+    for row in sms_data:
+        day_wise[row["day"]].append(row)
+
+    return render_template("dashboard.html", username=session.get("username"), day_wise=day_wise)
 
 # ----------------------------
 # Send SMS Route
