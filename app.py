@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash
+from flask import Flask, render_template, request, redirect, session, url_for, flash, Response
 import mysql.connector
+from mysql.connector import Error
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import json
@@ -7,7 +8,8 @@ import os
 from functools import wraps
 from collections import defaultdict
 import time
-from mysql.connector import Error
+import csv
+from io import StringIO
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
@@ -57,8 +59,12 @@ def home():
 def login():
     message = ""
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+
+        if not username or not password:
+            flash("Username and password are required.", "danger")
+            return redirect(url_for("login"))
 
         cursor = db.cursor(dictionary=True)
         cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
@@ -67,31 +73,49 @@ def login():
         if user and check_password_hash(user["password"], password):
             session["user_id"] = user["id"]
             session["username"] = user["username"]
+            flash(f"Welcome back, {user['username']}!", "success")
             return redirect(url_for("dashboard"))
         else:
-            message = "Invalid credentials"
+            flash("Invalid credentials", "danger")
 
-    return render_template("auth.html", message=message)
+    return render_template("auth.html")
 
-@app.route("/register", methods=["POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    username = request.form["username"]
-    email = request.form["email"]
-    password = request.form["password"]
-    hashed_password = generate_password_hash(password)
+    if request.method == "POST":
+        session.clear()
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
 
-    cursor = db.cursor()
-    cursor.execute(
-        "INSERT INTO users (username,email,password) VALUES (%s,%s,%s)",
-        (username, email, hashed_password)
-    )
-    db.commit()
-    flash("User registered successfully!", "success")
-    return redirect(url_for("login"))
+        if not username or not email or not password:
+            flash("All fields are required.", "danger")
+            return redirect(url_for("register"))
+
+        hashed_password = generate_password_hash(password)
+        cursor = db.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO users (username,email,password) VALUES (%s,%s,%s)",
+                (username, email, hashed_password)
+            )
+            db.commit()
+
+            # Auto-login after registration
+            session["user_id"] = cursor.lastrowid
+            session["username"] = username
+            flash("User registered successfully!", "success")
+            return redirect(url_for("dashboard"))
+        except mysql.connector.IntegrityError as e:
+            flash(f"Error: {str(e)}", "danger")
+            return redirect(url_for("register"))
+
+    return render_template("register.html")
 
 @app.route("/logout")
 def logout():
     session.clear()
+    flash("Logged out successfully.", "success")
     return redirect(url_for("login"))
 
 # ----------------------------
@@ -115,7 +139,7 @@ def dashboard():
     return render_template("dashboard.html", username=session.get("username"), day_wise=day_wise, show_section=None)
 
 # ----------------------------
-# Send SMS Route (AJAX enabled)
+# Send SMS Route
 # ----------------------------
 @app.route("/send_sms", methods=["POST"])
 @login_required
@@ -149,7 +173,6 @@ def send_sms():
         status = f"Exception: {str(e)}"
         message_flash = f"⚠️ Error sending SMS: {str(e)}"
 
-    # Log SMS
     cursor = db.cursor()
     cursor.execute(
         "INSERT INTO sms_logs (user_id, dest, message, status) VALUES (%s, %s, %s, %s)",
@@ -164,12 +187,8 @@ def send_sms():
     return redirect(url_for("dashboard"))
 
 # ----------------------------
-# Reports Route (date-range)
+# Reports Route
 # ----------------------------
-import csv
-from io import StringIO
-from flask import Response
-
 @app.route("/reports")
 @login_required
 def reports():
@@ -199,7 +218,6 @@ def reports():
         day_wise[row["day"]].append(row)
 
     if export_csv == "1":
-        # Create CSV
         output = StringIO()
         writer = csv.writer(output)
         writer.writerow(["Date","Recipient","Message","Status","Sent At"])
@@ -210,7 +228,6 @@ def reports():
         return Response(output, mimetype="text/csv",
                         headers={"Content-Disposition":"attachment;filename=sms_report.csv"})
 
-    # AJAX request
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         table_html = ""
         for day, logs in day_wise.items():
