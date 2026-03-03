@@ -84,6 +84,7 @@ def login():
 def register():
     if request.method == "POST":
         session.clear()
+
         username = request.form.get("username", "").strip()
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "").strip()
@@ -94,6 +95,7 @@ def register():
 
         hashed_password = generate_password_hash(password)
         cursor = db.cursor()
+
         try:
             cursor.execute(
                 "INSERT INTO users (username,email,password) VALUES (%s,%s,%s)",
@@ -101,16 +103,15 @@ def register():
             )
             db.commit()
 
-            # Auto-login after registration
-            session["user_id"] = cursor.lastrowid
-            session["username"] = username
-            flash("User registered successfully!", "success")
-            return redirect(url_for("dashboard"))
-        except mysql.connector.IntegrityError as e:
-            flash(f"Error: {str(e)}", "danger")
+            # ✅ DO NOT log user in
+            flash("Account created successfully! Please login.", "success")
+            return redirect(url_for("login"))
+
+        except mysql.connector.IntegrityError:
+            flash("Username or Email already exists.", "danger")
             return redirect(url_for("register"))
 
-    # For GET requests, render the combined auth.html
+    # GET request
     return render_template("auth.html")
 
 @app.route("/logout")
