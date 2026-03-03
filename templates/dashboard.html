@@ -50,7 +50,7 @@ header {
 }
 .sidebar button:hover,
 .sidebar button.active { background: #2563eb; color: white; }
-#darkModeToggle { margin-top:auto; margin-bottom:10px; background:#374151; color:white; cursor:pointer; border-radius:6px; }
+#darkModeToggle { margin-top:auto; margin-bottom:80px; background:#374151; color:white; cursor:pointer; border-radius:6px; }
 .logout-btn { position: absolute; bottom: 20px; left: 20px; width: 180px; background: #ef4444; color: white; font-weight: 600; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }
 .logout-btn:hover { background: #dc2626; }
 
@@ -241,6 +241,5 @@ function enableDarkMode(enable){
 if(localStorage.getItem("darkMode")==="enabled"){enableDarkMode(true);} else{enableDarkMode(false);}
 darkToggle.addEventListener("click",()=>{enableDarkMode(!document.body.classList.contains("dark-mode"));});
 </script>
-
 </body>
 </html>

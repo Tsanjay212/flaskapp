@@ -9,12 +9,13 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: "Segoe UI", Arial, sans-serif;
-    background: #f4f6f9;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #1a2035; /* dark theme background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  color: #e0e0e0; /* optional: light text for contrast */
 }
 
 /* AUTH WRAPPER */
@@ -24,7 +25,7 @@ body {
     padding: 20px;
 }
 
-/* BRAND */
+/* BRAND - Dark Theme */
 .brand {
     text-align: center;
     margin-bottom: 30px;
@@ -33,35 +34,36 @@ body {
 .brand h1 {
     font-size: 26px;
     font-weight: 600;
-    color: #1f2937;
+    color: #ffffff; /* bright white for strong contrast */
 }
 
 .brand p {
     font-size: 14px;
-    color: #6b7280;
+    color: #a0a0b5; /* muted light grayish-blue for secondary text */
     margin-top: 5px;
 }
 
-/* CARD */
+/* CARD - Dark Theme */
 .auth-card {
-    background: white;
+    background: #2a2a3d;                  /* slightly lighter than body for contrast */
+    color: #e5e7eb;                        /* light text for readability */
     padding: 35px;
-    border-radius: 10px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+    border-radius: 12px;                   /* slightly rounded corners for modern look */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.7); /* stronger shadow for depth */
 }
 
 .auth-card h2 {
     text-align: center;
     margin-bottom: 25px;
-    color: #111827;
+    color: #ffffff;                        /* bright white for heading to pop */
 }
 
-/* FLASH MESSAGES */
 .message {
     text-align: center;
     margin-bottom: 15px;
     font-size: 14px;
     font-weight: 500;
+    color: #ffd166;                        /* warm accent color for flash messages */
 }
 
 /* FORM */
