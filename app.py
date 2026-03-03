@@ -12,12 +12,27 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 # ----------------------------
 # Database connection
 # ----------------------------
-db = mysql.connector.connect(
-    host=os.environ.get("MYSQL_HOST", "sanreach_db"),
-    user=os.environ.get("MYSQL_USER", "flaskuser"),
-    password=os.environ.get("MYSQL_PASSWORD", "Tsanjay@212"),
-    database=os.environ.get("MYSQL_DB", "sanreach")
-)
+import time
+import mysql.connector
+from mysql.connector import Error
+
+db = None
+for i in range(10):  # retry 10 times
+    try:
+        db = mysql.connector.connect(
+            host=os.environ.get("MYSQL_HOST", "sanreach_db"),
+            user=os.environ.get("MYSQL_USER", "flaskuser"),
+            password=os.environ.get("MYSQL_PASSWORD", "Tsanjay@212"),
+            database=os.environ.get("MYSQL_DB", "sanreach")
+        )
+        print("✅ DB connected")
+        break
+    except Error as e:
+        print(f"⚠️ DB connection failed, retrying... ({i+1}/10)")
+        time.sleep(3)
+
+if db is None:
+    raise Exception("❌ Could not connect to the database after 10 retries")
 
 # ----------------------------
 # Login Required Decorator
