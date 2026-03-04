@@ -95,9 +95,9 @@ tr:hover { background: #f9fafb; }
 .preset-btn:hover { background: #d1d5db; }
 
 /* DARK MODE */
-body.dark-mode { background: #111827; color: #e5e7eb; }
+body.dark-mode { background: #00091b; color: #e5e7eb; }
 body.dark-mode header { background: #1f2937; color: #e5e7eb; }
-body.dark-mode .sidebar { background: #1f2937; }
+body.dark-mode .sidebar { background: #00060e; }
 body.dark-mode .sidebar button { color: #d1d5db; }
 body.dark-mode .sidebar button.active,
 body.dark-mode .sidebar button:hover { background: #2563eb; color: white; }
@@ -140,9 +140,9 @@ body.dark-mode .submit-btn:hover { background: #1d4ed8; }
         <h3>Send SMS</h3>
         <form id="sms-form">
             <label>Recipient Number</label>
-            <input type="text" name="number" required>
+            <input type="text" name="number" placeholder="EX-91798..." required>
             <label>Message</label>
-            <textarea name="message" rows="4" required></textarea>
+            <textarea name="message" rows="4" placeholder="Type your message here" required></textarea>
             <button type="submit" class="submit-btn">Send SMS</button>
         </form>
         <div id="sms-response"></div>
