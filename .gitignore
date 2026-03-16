@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+*.sqlite
+*.log
+*.bak
+.DS_Store
+app.py_bkp
