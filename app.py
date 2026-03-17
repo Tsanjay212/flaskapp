@@ -15,6 +15,10 @@ from io import StringIO
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 
+@app.route('/health')
+def health():
+    return "OK", 200
+
 # ----------------------------
 # Test route to check load balancer
 # ----------------------------
