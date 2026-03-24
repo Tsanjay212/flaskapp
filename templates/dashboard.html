@@ -3,134 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <title>SanReach Dashboard</title>
-
-<!-- Flatpickr -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", Arial, sans-serif; }
-
-/* BODY & HEADER */
-body {
-    background: #f8f7f7fb;
-    color: #333;
-}
-header {
-    background: #02142e;
-    color: white;
-    padding: 20px;
-    text-align: center;
-    font-size: 22px;
-    font-weight: 600;
-}
-
-/* SIDEBAR */
-.sidebar {
-    height: 100vh;
-    width: 230px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    background: #02142e;
-    padding-top: 80px;
-    display: flex;
-    flex-direction: column;
-}
-.sidebar button {
-    background: none;
-    border: none;
-    color: #ffffff;
-    text-align: left;
-    padding: 14px 20px;
-    font-size: 15px;
-    cursor: pointer;
-    width: 100%;
-    transition: 0.2s;
-}
-.sidebar button:hover,
-.sidebar button.active { background: #02060f; color: white; }
-#darkModeToggle { margin-top:auto; margin-bottom:80px; background:#374151; color:white; cursor:pointer; border-radius:6px; }
-.logout-btn { position: absolute; bottom: 10px; width:180px; background:#ef4444; color: white; font-weight:600; border:none; padding:10px; border-radius:6px; text-align:center; display:block; text-decoration:none; }
+* { box-sizing: border-box; margin:0; padding:0; font-family:"Segoe UI", Arial, sans-serif; }
+body { background:#f8f7f7fb; color:#333; }
+header { background:#02142e; color:white; padding:20px; text-align:center; font-size:22px; font-weight:600; }
+.sidebar { height:100vh; width:230px; position:fixed; top:0; left:0; background:#02142e; padding-top:80px; display:flex; flex-direction:column; }
+.sidebar button { background:none; border:none; color:white; text-align:left; padding:14px 20px; cursor:pointer; width:100%; transition:0.2s; }
+.sidebar button:hover, .sidebar button.active { background:#02060f; color:white; }
+.logout-btn { position:absolute; bottom:10px; width:180px; background:#ef4444; color:white; font-weight:600; border:none; padding:10px; border-radius:6px; cursor:pointer; }
 .logout-btn:hover { background:#dc2626; }
-
-/* MAIN */
-.main { margin-left: 220px; padding: 40px; }
-.card {
-    background: white;
-    padding: 25px;
-    border-radius: 10px;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
+.main { margin-left:220px; padding:40px; }
+.card { background:white; padding:25px; border-radius:10px; margin-bottom:25px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
 h2,h3,h4 { margin-top:0; }
-input, textarea { width: 100%; padding: 10px 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 14px; }
-input:focus, textarea:focus { outline: none; border-color: #2563eb; }
-
-/* BUTTONS */
-.submit-btn { background: #2563eb; color: white; font-weight: 600; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; }
-.submit-btn:hover { background: #1d4ed8; }
-
-/* TABLE */
-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-thead { background: #f3f4f6; }
-th,td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-tr:hover { background: #f9fafb; }
-.status-sent { color: #16a34a; font-weight: 600; }
-.status-failed { color: #dc2626; font-weight: 600; }
-
-/* SECTION */
-.section { display: none; }
-
-/* REPORT FILTERS */
-.report-filters {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-bottom: 15px;
-}
-#report-range { min-width: 260px; cursor: pointer; }
-.preset-btn { background: #e5e7eb; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-.preset-btn:hover { background: #d1d5db; }
-
-/* DARK MODE */
-body.dark-mode { background: #00091b; color: #e5e7eb; }
-body.dark-mode header { background: #03080f; color: #e5e7eb; }
-body.dark-mode .sidebar { background: #011430; }
-body.dark-mode .sidebar button { color: #d4d0dd; }
-body.dark-mode .sidebar button.active,
-body.dark-mode .sidebar button:hover { background: #babec5; color: white; }
-body.dark-mode .main { background: #111827; color: #e5e7eb; }
-body.dark-mode .card { background: #1f2937; color: #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-body.dark-mode table thead { background: #374151; color: #f9fafb; }
-body.dark-mode table tr:hover { background: #374151; }
-body.dark-mode input, body.dark-mode textarea { background: #1f2937; color: #e5e7eb; border: 1px solid #374151; }
-body.dark-mode input:focus, body.dark-mode textarea:focus { border-color: #2563eb; }
-body.dark-mode .submit-btn { background: #2563eb; }
-body.dark-mode .submit-btn:hover { background: #1d4ed8; }
+input, textarea { width:100%; padding:10px 12px; margin-bottom:15px; border-radius:6px; border:1px solid #d1d5db; font-size:14px; }
+input:focus, textarea:focus { outline:none; border-color:#2563eb; }
+.submit-btn { background:#2563eb; color:white; font-weight:600; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; }
+.submit-btn:hover { background:#1d4ed8; }
+table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; }
+thead { background:#f3f4f6; }
+th,td { padding:10px; text-align:left; border-bottom:1px solid #e5e7eb; }
+tr:hover { background:#f9fafb; }
+.status-sent { color:#16a34a; font-weight:600; }
+.status-failed { color:#dc2626; font-weight:600; }
+.section { display:none; }
+.report-filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:15px; }
+#report-range { min-width:260px; cursor:pointer; }
+.preset-btn { background:#e5e7eb; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; }
+.preset-btn:hover { background:#d1d5db; }
 </style>
 </head>
-<body>
 
+<body>
 <header>🚀 SanReach SMS Dashboard</header>
 
 <div class="sidebar">
     <button class="toggle-btn" data-target="send-section">Send SMS</button>
     <button class="toggle-btn" data-target="report-section">Reports</button>
-    <button id="darkModeToggle" class="toggle-btn">🌙 Dark Mode</button>
-    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    <form method="GET" action="{{ url_for('logout') }}">
+        <button class="logout-btn" type="submit">Logout</button>
+    </form>
 </div>
 
 <div class="main">
-
-<!-- Welcome -->
-<div id="welcome-section" class="section">
-    <div class="card">
-        <h2>Welcome {{ username }}!</h2>
-        <p>Select an option from the left to begin.</p>
-    </div>
-</div>
 
 <!-- SEND SMS -->
 <div id="send-section" class="section">
@@ -164,15 +81,13 @@ body.dark-mode .submit-btn:hover { background: #1d4ed8; }
             <div class="card">
                 <h4>{{ day }}</h4>
                 <table>
-                    <thead>
-                        <tr><th>Recipient</th><th>Message</th><th>Status</th><th>Sent At</th></tr>
-                    </thead>
+                    <thead><tr><th>Recipient</th><th>Message</th><th>Status</th><th>Sent At</th></tr></thead>
                     <tbody>
                         {% for sms in logs %}
                         <tr>
                             <td>{{ sms.dest }}</td>
                             <td>{{ sms.message }}</td>
-                            <td class="{{ 'status-sent' if sms.status == 'Sent' else 'status-failed' }}">{{ sms.status }}</td>
+                            <td class="{{ 'status-sent' if sms.status=='Sent' else 'status-failed' }}">{{ sms.status }}</td>
                             <td>{{ sms.sent_at }}</td>
                         </tr>
                         {% endfor %}
@@ -190,7 +105,6 @@ body.dark-mode .submit-btn:hover { background: #1d4ed8; }
 </div>
 
 <script>
-// Section toggle
 const buttons = document.querySelectorAll(".toggle-btn");
 const sections = document.querySelectorAll(".section");
 function showSection(id){
@@ -200,65 +114,41 @@ function showSection(id){
     sections.forEach(sec=>sec.style.display="none");
     document.getElementById(id).style.display="block";
 }
-{% if show_section %}showSection("{{ show_section }}");{% else %}showSection("welcome-section");{% endif %}
+{% if show_section %}showSection("{{ show_section }}");{% else %}showSection("send-section");{% endif %}
 buttons.forEach(btn=>btn.addEventListener("click",()=>showSection(btn.dataset.target)));
 
 // AJAX Send SMS
 document.getElementById("sms-form").addEventListener("submit", function(e){
     e.preventDefault();
-    const formData = new FormData(this);
+    const formData=new FormData(this);
     fetch("{{ url_for('send_sms') }}", {
-        method: "POST",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
-        body: formData,
-        credentials: "same-origin" // <-- fix for ALB
-    })
-    .then(res => res.json())
-    .then(res => {
-        const resp = document.getElementById("sms-response");
-        resp.innerHTML = res.message;
-        resp.style.color = res.status === "Sent" ? "green" : "red";
-        if(res.status === "Sent") this.reset();
+        method:"POST",
+        headers: {"X-Requested-With":"XMLHttpRequest"},
+        body:formData
+    }).then(res=>res.json()).then(res=>{
+        const resp=document.getElementById("sms-response");
+        resp.innerHTML=res.message;
+        resp.style.color=res.status==="Sent"?"green":"red";
+        if(res.status==="Sent") this.reset();
     });
 });
 
-// REPORT RANGE PICKER
-let selectedStart = null, selectedEnd = null;
-const picker = flatpickr("#report-range", {
-    mode: "range",
-    dateFormat: "Y-m-d",
-    onClose: function(sd) {
-        if(sd.length===2){
-            selectedStart = picker.formatDate(sd[0],"Y-m-d");
-            selectedEnd = picker.formatDate(sd[1],"Y-m-d");
-        }
-    }
-});
+// Reports
+let selectedStart=null, selectedEnd=null;
+const picker=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d",onClose: function(sd){
+    if(sd.length===2){selectedStart=picker.formatDate(sd[0],"Y-m-d"); selectedEnd=picker.formatDate(sd[1],"Y-m-d");}
+}});
 function setRange(start,end){picker.setDate([start,end],true); selectedStart=start; selectedEnd=end;}
 document.getElementById("today-btn").onclick=()=>{const today=new Date().toISOString().split('T')[0]; setRange(today,today);};
 document.getElementById("last7-btn").onclick=()=>{const today=new Date(); const past=new Date(); past.setDate(today.getDate()-6); setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
 document.getElementById("month-btn").onclick=()=>{const today=new Date(); const first=new Date(today.getFullYear(),today.getMonth(),1); setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
 
-// AJAX Reports search
 function fetchReports(startDate,endDate){
-    fetch(`/reports?start=${startDate}&end=${endDate}`, {
-        headers: { "X-Requested-With":"XMLHttpRequest" },
-        credentials: "same-origin" // <-- fix for ALB
-    })
-    .then(res => res.text())
-    .then(html => { document.getElementById("report-table").innerHTML = html; });
+    fetch("{{ url_for('reports') }}?start="+startDate+"&end="+endDate,{headers:{"X-Requested-With":"XMLHttpRequest"}})
+    .then(res=>res.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
 }
 document.getElementById("report-search-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} fetchReports(selectedStart,selectedEnd);}
-document.getElementById("report-export-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} window.location=`/reports?start=${selectedStart}&end=${selectedEnd}&export=1`;};
-
-// DARK MODE
-const darkToggle=document.getElementById("darkModeToggle");
-function enableDarkMode(enable){
-    if(enable){document.body.classList.add("dark-mode"); darkToggle.innerText="☀️ Light Mode"; localStorage.setItem("darkMode","enabled");}
-    else{document.body.classList.remove("dark-mode"); darkToggle.innerText="🌙 Dark Mode"; localStorage.setItem("darkMode","disabled");}
-}
-if(localStorage.getItem("darkMode")==="enabled"){enableDarkMode(true);} else{enableDarkMode(false);}
-darkToggle.addEventListener("click",()=>{enableDarkMode(!document.body.classList.contains("dark-mode"));});
+document.getElementById("report-export-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} window.location="{{ url_for('reports') }}?start="+selectedStart+"&end="+selectedEnd+"&export=1";};
 </script>
 </body>
 </html>

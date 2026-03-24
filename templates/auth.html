@@ -3,152 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SanReach - Login</title>
+<title>SanReach - Login / Register</title>
 
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: "Segoe UI", Arial, sans-serif;
-  background: #0c1225; /* dark theme background */
+  background: #0c1225;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  color: #2e2261; /* optional: light text for contrast */
+  color: #fff;
 }
 
-/* AUTH WRAPPER */
 .auth-wrapper {
     width: 100%;
     max-width: 420px;
     padding: 20px;
 }
 
-/* BRAND - Dark Theme */
-.brand {
-    text-align: center;
-    margin-bottom: 30px;
-}
+.brand { text-align: center; margin-bottom: 30px; }
+.brand h1 { font-size: 26px; font-weight: 600; color: #ffffff; }
+.brand p { font-size: 14px; color: #a0a0b5; margin-top: 5px; }
 
-.brand h1 {
-    font-size: 26px;
-    font-weight: 600;
-    color: #ffffff; /* bright white for strong contrast */
-}
-
-.brand p {
-    font-size: 14px;
-    color: #a0a0b5; /* muted light grayish-blue for secondary text */
-    margin-top: 5px;
-}
-
-/* CARD - Dark Theme */
 .auth-card {
-    background: #3f3f61;                  /* slightly lighter than body for contrast */
-    color: #e5e7eb;                        /* light text for readability */
+    background: #3f3f61;
+    color: #e5e7eb;
     padding: 35px;
-    border-radius: 12px;                   /* slightly rounded corners for modern look */
-    box-shadow: 0 8px 20px rgba(0,0,0,0.7); /* stronger shadow for depth */
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.7);
 }
 
-.auth-card h2 {
-    text-align: center;
-    margin-bottom: 25px;
-    color: #ffffff;                        /* bright white for heading to pop */
-}
+.auth-card h2 { text-align: center; margin-bottom: 25px; color: #ffffff; }
 
-.message {
-    text-align: center;
-    margin-bottom: 15px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #ffd166;                        /* warm accent color for flash messages */
-}
+.message { text-align:center; margin-bottom:15px; font-size:14px; font-weight:500; color:#ffd166; }
 
-/* FORM */
-form {
-    display: flex;
-    flex-direction: column;
-}
+form { display: flex; flex-direction: column; }
+input { padding: 11px 12px; margin-bottom: 15px; border-radius: 6px; border:1px solid #d1d5db; font-size:14px; }
+input:focus { outline:none; border-color:#2563eb; }
 
-input {
-    padding: 11px 12px;
-    margin-bottom: 15px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    font-size: 14px;
-}
+button { padding: 11px; border:none; border-radius:6px; background:#2563eb; color:white; font-weight:600; cursor:pointer; transition:0.2s; }
+button:hover { background:#1d4ed8; }
 
-input:focus {
-    outline: none;
-    border-color: #2563eb;
-}
+.toggle { text-align:center; margin-top:15px; font-size:14px; }
+.toggle a { color:#2563eb; font-weight:600; cursor:pointer; text-decoration:none; }
+.toggle a:hover { text-decoration:underline; }
 
-/* BUTTON */
-button {
-    padding: 11px;
-    border: none;
-    border-radius: 6px;
-    background: #2563eb;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-button:hover {
-    background: #1d4ed8;
-}
-
-/* TOGGLE */
-.toggle {
-    text-align: center;
-    margin-top: 15px;
-    font-size: 14px;
-}
-
-.toggle a {
-    color: #2563eb;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.toggle a:hover {
-    text-decoration: underline;
-}
-
-/* FOOTER */
-.footer {
-    text-align: center;
-    margin-top: 20px;
-    font-size: 12px;
-    color: #0f3a85;
-}
+.footer { text-align:center; margin-top:20px; font-size:12px; color:#0f3a85; }
 </style>
 </head>
 
 <body>
-
 <div class="auth-wrapper">
 
-    <!-- Brand -->
     <div class="brand">
         <h1>🚀 SanReach</h1>
         <p>Fast & Reliable SMS Platform</p>
     </div>
 
-    <!-- Card -->
     <div class="auth-card">
         <h2 id="formTitle">Login</h2>
 
-        <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
-              <div class="message"
-                   style="color: {% if category=='danger' %}#dc2626{% else %}#16a34a{% endif %};">
+              <div class="message" style="color: {% if category=='danger' %}#dc2626{% else %}#16a34a{% endif %};">
                 {{ message }}
               </div>
             {% endfor %}
@@ -180,7 +101,6 @@ button:hover {
     <div class="footer">
         © 2026 SanReach. All rights reserved.
     </div>
-
 </div>
 
 <script>
@@ -205,7 +125,7 @@ function toggleForms() {
     }
 }
 
-// Auto-switch to Register form if registration failed
+// Auto-switch to Register form if registration endpoint had messages
 {% if request.endpoint == 'register' and messages %}
 toggleForms();
 {% endif %}
