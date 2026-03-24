@@ -141,6 +141,12 @@ def register():
 
     return render_template("auth.html")
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Logged out successfully.", "success")
+    return redirect(url_for("login"))
+
 # ----------------------------
 # Dashboard
 # ----------------------------
