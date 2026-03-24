@@ -51,8 +51,8 @@ header {
 .sidebar button:hover,
 .sidebar button.active { background: #02060f; color: white; }
 #darkModeToggle { margin-top:auto; margin-bottom:80px; background:#374151; color:white; cursor:pointer; border-radius:6px; }
-.logout-btn { position: absolute; bottom: 10px; width: 180px; background: #ef4444; color: rgb(255, 255, 255); font-weight: 600; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }
-.logout-btn:hover { background: #dc2626; }
+.logout-btn { position: absolute; bottom: 10px; width:180px; background:#ef4444; color: white; font-weight:600; border:none; padding:10px; border-radius:6px; text-align:center; display:block; text-decoration:none; }
+.logout-btn:hover { background:#dc2626; }
 
 /* MAIN */
 .main { margin-left: 220px; padding: 40px; }
@@ -119,9 +119,7 @@ body.dark-mode .submit-btn:hover { background: #1d4ed8; }
     <button class="toggle-btn" data-target="send-section">Send SMS</button>
     <button class="toggle-btn" data-target="report-section">Reports</button>
     <button id="darkModeToggle" class="toggle-btn">🌙 Dark Mode</button>
-    <form method="GET" action="{{ url_for('logout') }}">
-        <button class="logout-btn" type="submit">Logout</button>
-    </form>
+    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
 </div>
 
 <div class="main">
@@ -206,28 +204,49 @@ function showSection(id){
 buttons.forEach(btn=>btn.addEventListener("click",()=>showSection(btn.dataset.target)));
 
 // AJAX Send SMS
-document.getElementById("sms-form").addEventListener("submit",function(e){
+document.getElementById("sms-form").addEventListener("submit", function(e){
     e.preventDefault();
-    const formData=new FormData(this);
-    fetch("{{ url_for('send_sms') }}",{method:"POST", headers:{"X-Requested-With":"XMLHttpRequest"}, body:formData})
-    .then(res=>res.json()).then(res=>{
-        const resp=document.getElementById("sms-response");
-        resp.innerHTML=res.message;
-        resp.style.color=res.status==="Sent"?"green":"red";
-        if(res.status==="Sent") this.reset();
+    const formData = new FormData(this);
+    fetch("{{ url_for('send_sms') }}", {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        body: formData,
+        credentials: "same-origin" // <-- fix for ALB
+    })
+    .then(res => res.json())
+    .then(res => {
+        const resp = document.getElementById("sms-response");
+        resp.innerHTML = res.message;
+        resp.style.color = res.status === "Sent" ? "green" : "red";
+        if(res.status === "Sent") this.reset();
     });
 });
 
 // REPORT RANGE PICKER
-let selectedStart=null, selectedEnd=null;
-const picker=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d",onClose:function(sd){if(sd.length===2){selectedStart=picker.formatDate(sd[0],"Y-m-d");selectedEnd=picker.formatDate(sd[1],"Y-m-d");}}});
+let selectedStart = null, selectedEnd = null;
+const picker = flatpickr("#report-range", {
+    mode: "range",
+    dateFormat: "Y-m-d",
+    onClose: function(sd) {
+        if(sd.length===2){
+            selectedStart = picker.formatDate(sd[0],"Y-m-d");
+            selectedEnd = picker.formatDate(sd[1],"Y-m-d");
+        }
+    }
+});
 function setRange(start,end){picker.setDate([start,end],true); selectedStart=start; selectedEnd=end;}
 document.getElementById("today-btn").onclick=()=>{const today=new Date().toISOString().split('T')[0]; setRange(today,today);};
 document.getElementById("last7-btn").onclick=()=>{const today=new Date(); const past=new Date(); past.setDate(today.getDate()-6); setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
 document.getElementById("month-btn").onclick=()=>{const today=new Date(); const first=new Date(today.getFullYear(),today.getMonth(),1); setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
 
+// AJAX Reports search
 function fetchReports(startDate,endDate){
-    fetch(`/reports?start=${startDate}&end=${endDate}`,{headers:{"X-Requested-With":"XMLHttpRequest"}}).then(res=>res.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
+    fetch(`/reports?start=${startDate}&end=${endDate}`, {
+        headers: { "X-Requested-With":"XMLHttpRequest" },
+        credentials: "same-origin" // <-- fix for ALB
+    })
+    .then(res => res.text())
+    .then(html => { document.getElementById("report-table").innerHTML = html; });
 }
 document.getElementById("report-search-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} fetchReports(selectedStart,selectedEnd);}
 document.getElementById("report-export-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} window.location=`/reports?start=${selectedStart}&end=${selectedEnd}&export=1`;};
