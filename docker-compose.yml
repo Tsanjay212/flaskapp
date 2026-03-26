@@ -1,6 +1,16 @@
+version: "3.8"
+
 services:
   flaskapp:
     build: .
     container_name: flaskapp
     ports:
       - "8000:8000"
+
+    environment:
+      MYSQL_HOST: flask-mariadb-db.cnwcmsquw4d7.ap-south-2.rds.amazonaws.com
+      MYSQL_USER: flaskdb
+      MYSQL_PASSWORD: Tsanjay212
+      MYSQL_DB: sanreach
+
+    restart: always
