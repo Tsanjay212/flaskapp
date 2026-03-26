@@ -240,6 +240,31 @@ def reports():
     return render_template("dashboard.html", summary_data=summary_data, username=session.get("username"), show_section="report")
 
 # ----------------------------
+# SMS Templates Feature
+# ----------------------------
+@app.route("/sms_templates", methods=["GET"])
+@login_required
+def get_templates():
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT name, message FROM sms_templates WHERE user_id=%s ORDER BY id DESC", (session["user_id"],))
+    templates = cursor.fetchall()
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return {"templates": templates}
+    return render_template("dashboard.html", templates=templates, show_section="sms-feature-section")
+
+@app.route("/save_template", methods=["POST"])
+@login_required
+def save_template():
+    name = request.form.get("template_name", "").strip()
+    message = request.form.get("template_message", "").strip()
+    if not name or not message:
+        return {"status":"error","message":"Name and message required"}
+    cursor = db.cursor()
+    cursor.execute("INSERT INTO sms_templates (user_id, name, message) VALUES (%s,%s,%s)", (session["user_id"], name, message))
+    db.commit()
+    return {"status":"success","message":"Template saved successfully!"}
+
+# ----------------------------
 # Run Flask
 # ----------------------------
 if __name__ == "__main__":
