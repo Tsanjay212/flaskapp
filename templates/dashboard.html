@@ -77,31 +77,24 @@ tr:hover { background:#f9fafb; }
             <button id="report-export-btn" class="submit-btn" style="background:#10b981;">Export CSV</button>
         </div>
         <div id="report-table">
-            {% for day, logs in day_wise.items() %}
-            <div class="card">
-                <h4>{{ day }}</h4>
-                <table>
-                    <thead><tr><th>Recipient</th><th>Message</th><th>Status</th><th>Sent At</th></tr></thead>
-                    <tbody>
-                        {% for sms in logs %}
-                        <tr>
-                            <td>{{ sms.dest }}</td>
-                            <td>{{ sms.message }}</td>
-                            <td class="{{ 'status-sent' if sms.status=='Sent' else 'status-failed' }}">{{ sms.status }}</td>
-                            <td>{{ sms.sent_at }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endfor %}
-            {% if not day_wise %}
+            {% if summary_data %}
+            <table>
+                <thead><tr><th>Date</th><th>Recipient</th><th>SMS Count</th></tr></thead>
+                <tbody>
+                    {% for row in summary_data %}
+                    <tr>
+                        <td>{{ row.day }}</td>
+                        <td>{{ row.dest }}</td>
+                        <td>{{ row.sms_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
             <p>No SMS records found.</p>
             {% endif %}
         </div>
     </div>
-</div>
-
 </div>
 
 <script>

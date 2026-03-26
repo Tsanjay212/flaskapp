@@ -2,12 +2,12 @@ from flask import Flask, render_template, request, redirect, session, url_for, f
 import mysql.connector
 from mysql.connector import Error
 from werkzeug.security import generate_password_hash, check_password_hash
-import requests, json, os, time
+from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
 from collections import defaultdict
 from io import StringIO
-from werkzeug.middleware.proxy_fix import ProxyFix
 import csv
+import os, time, requests, json, socket
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
@@ -22,7 +22,6 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 def health():
     return "OK", 200
 
-import socket
 @app.route("/server")
 def server():
     return f"Served from: {socket.gethostname()}"
@@ -69,9 +68,7 @@ def login_required(f):
 # ----------------------------
 @app.route("/", methods=["GET"])
 def home():
-    if "user_id" in session:
-        return redirect(url_for("dashboard"))
-    return redirect(url_for("login"))
+    return redirect(url_for("dashboard") if "user_id" in session else url_for("login"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -94,7 +91,6 @@ def login():
             return redirect(url_for("dashboard"))
         else:
             flash("Invalid credentials", "danger")
-
     return render_template("auth.html")
 
 @app.route("/register", methods=["GET", "POST"])
@@ -122,7 +118,6 @@ def register():
         except mysql.connector.IntegrityError:
             flash("Username or Email already exists.", "danger")
             return redirect(url_for("register"))
-
     return render_template("auth.html")
 
 @app.route("/logout")
@@ -132,24 +127,12 @@ def logout():
     return redirect(url_for("login"))
 
 # ----------------------------
-# Dashboard Route
+# Dashboard
 # ----------------------------
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT DATE(sent_at) as day, dest, message, status, sent_at
-        FROM sms_logs
-        WHERE user_id = %s
-        ORDER BY sent_at DESC
-    """, (session["user_id"],))
-    sms_data = cursor.fetchall()
-    day_wise = defaultdict(list)
-    for row in sms_data:
-        day_wise[row["day"]].append(row)
-
-    return render_template("dashboard.html", username=session.get("username"), day_wise=day_wise, show_section=None)
+    return render_template("dashboard.html", username=session.get("username"), show_section=None)
 
 # ----------------------------
 # Send SMS Route
@@ -200,7 +183,7 @@ def send_sms():
     return redirect(url_for("dashboard"))
 
 # ----------------------------
-# Reports Route
+# Reports Route (summary)
 # ----------------------------
 @app.route("/reports")
 @login_required
@@ -210,49 +193,51 @@ def reports():
     export_csv = request.args.get("export")
 
     cursor = db.cursor(dictionary=True)
+
     if start_date and end_date:
         cursor.execute("""
-            SELECT DATE(sent_at) as day, dest, message, status, sent_at
+            SELECT DATE(sent_at) as day, dest, COUNT(*) as sms_count
             FROM sms_logs
             WHERE user_id=%s AND DATE(sent_at) BETWEEN %s AND %s
-            ORDER BY sent_at DESC
+            GROUP BY day, dest
+            ORDER BY day DESC
         """, (session["user_id"], start_date, end_date))
     else:
         cursor.execute("""
-            SELECT DATE(sent_at) as day, dest, message, status, sent_at
+            SELECT DATE(sent_at) as day, dest, COUNT(*) as sms_count
             FROM sms_logs
             WHERE user_id=%s
-            ORDER BY sent_at DESC
+            GROUP BY day, dest
+            ORDER BY day DESC
         """, (session["user_id"],))
+    
+    summary_data = cursor.fetchall()
 
-    sms_data = cursor.fetchall()
-    day_wise = defaultdict(list)
-    for row in sms_data:
-        day_wise[row["day"]].append(row)
-
+    # CSV export
     if export_csv == "1":
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(["Date","Recipient","Message","Status","Sent At"])
-        for day, logs in day_wise.items():
-            for sms in logs:
-                writer.writerow([day, sms["dest"], sms["message"], sms["status"], sms["sent_at"]])
+        writer.writerow(["Date", "Recipient", "SMS Count"])
+        for row in summary_data:
+            writer.writerow([row["day"], row["dest"], row["sms_count"]])
         output.seek(0)
-        return Response(output, mimetype="text/csv",
-                        headers={"Content-Disposition":"attachment;filename=sms_report.csv"})
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment; filename=sms_summary.csv"}
+        )
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        table_html = ""
-        for day, logs in day_wise.items():
-            table_html += f'<div class="card" style="margin-bottom:10px;"><h4>{day}</h4><table style="width:100%; border-collapse: collapse;"><thead><tr style="background: rgba(255,255,255,0.2);"><th>Recipient</th><th>Message</th><th>Status</th><th>Sent At</th></tr></thead><tbody>'
-            for sms in logs:
-                table_html += f'<tr style="background: rgba(255,255,255,0.05);"><td>{sms["dest"]}</td><td>{sms["message"]}</td><td>{sms["status"]}</td><td>{sms["sent_at"]}</td></tr>'
-            table_html += "</tbody></table></div>"
-        if not day_wise:
-            table_html = "<p>No SMS records found for this date range.</p>"
+        # Return simple summary table
+        table_html = "<table><thead><tr><th>Date</th><th>Recipient</th><th>SMS Count</th></tr></thead><tbody>"
+        for row in summary_data:
+            table_html += f"<tr><td>{row['day']}</td><td>{row['dest']}</td><td>{row['sms_count']}</td></tr>"
+        if not summary_data:
+            table_html += "<tr><td colspan='3'>No SMS records found.</td></tr>"
+        table_html += "</tbody></table>"
         return table_html
 
-    return render_template("dashboard.html", day_wise=day_wise, username=session.get("username"), show_section="report")
+    return render_template("dashboard.html", summary_data=summary_data, username=session.get("username"), show_section="report")
 
 # ----------------------------
 # Run Flask
