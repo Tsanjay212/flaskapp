@@ -37,11 +37,12 @@ tr:hover { background:#f9fafb; }
 </head>
 
 <body>
-<header>🚀 San-Sms-T-Platform SMS Dashboard</header>
+<header>🚀 San-Sms-Platform SMS Dashboard</header>
 
 <div class="sidebar">
     <button class="toggle-btn" data-target="send-section">Send SMS</button>
     <button class="toggle-btn" data-target="report-section">Reports</button>
+    <button class="toggle-btn" data-target="templates-section">Templates</button>
     <form method="GET" action="{{ url_for('logout') }}">
         <button class="logout-btn" type="submit">Logout</button>
     </form>
@@ -97,6 +98,47 @@ tr:hover { background:#f9fafb; }
     </div>
 </div>
 
+<!-- TEMPLATES -->
+<div id="templates-section" class="section">
+    <div class="card">
+        <h3>SMS Templates</h3>
+        <form id="template-form">
+            <label>Template Name</label>
+            <input type="text" name="template_name" placeholder="Template Name" required>
+            <label>Message</label>
+            <textarea name="template_message" rows="4" placeholder="Type template message here" required></textarea>
+            <button type="submit" class="submit-btn">Save Template</button>
+        </form>
+        <div id="template-response"></div>
+    </div>
+
+    <div class="card">
+        <h4>Saved Templates</h4>
+        <table id="templates-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Message</th>
+                    <th>Created Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if templates %}
+                    {% for tpl in templates %}
+                    <tr>
+                        <td>{{ tpl.name }}</td>
+                        <td>{{ tpl.message }}</td>
+                        <td>{{ tpl.created_date }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="3">No templates saved.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <script>
 const buttons = document.querySelectorAll(".toggle-btn");
 const sections = document.querySelectorAll(".section");
@@ -142,6 +184,39 @@ function fetchReports(startDate,endDate){
 }
 document.getElementById("report-search-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} fetchReports(selectedStart,selectedEnd);}
 document.getElementById("report-export-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} window.location="{{ url_for('reports') }}?start="+selectedStart+"&end="+selectedEnd+"&export=1";};
+
+// Templates
+document.getElementById("template-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    const formData=new FormData(this);
+    fetch("{{ url_for('save_template') }}", {
+        method:"POST",
+        headers: {"X-Requested-With":"XMLHttpRequest"},
+        body:formData
+    }).then(res=>res.json()).then(res=>{
+        const resp=document.getElementById("template-response");
+        resp.innerHTML=res.message;
+        resp.style.color=res.status==="success"?"green":"red";
+        if(res.status==="success"){ this.reset(); fetchTemplates(); }
+    });
+});
+
+function fetchTemplates(){
+    fetch("{{ url_for('get_templates') }}", {headers:{"X-Requested-With":"XMLHttpRequest"}})
+    .then(res=>res.json()).then(data=>{
+        const tbody=document.querySelector("#templates-table tbody");
+        tbody.innerHTML="";
+        if(data.templates.length>0){
+            data.templates.forEach(tpl=>{
+                const tr=document.createElement("tr");
+                tr.innerHTML=`<td>${tpl.name}</td><td>${tpl.message}</td><td>${tpl.created_date}</td>`;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML='<tr><td colspan="3">No templates saved.</td></tr>';
+        }
+    });
+}
 </script>
 </body>
 </html>
