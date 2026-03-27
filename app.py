@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash, Response
+from flask import Flask, render_template, request, redirect, session, url_for, flash, Response, jsonify
 import mysql.connector
 from mysql.connector import Error
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -183,7 +183,7 @@ def send_sms():
     return redirect(url_for("dashboard"))
 
 # ----------------------------
-# Reports Route (summary)
+# Reports Route
 # ----------------------------
 @app.route("/reports")
 @login_required
@@ -228,7 +228,6 @@ def reports():
         )
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        # Return simple summary table
         table_html = "<table><thead><tr><th>Date</th><th>Recipient</th><th>SMS Count</th></tr></thead><tbody>"
         for row in summary_data:
             table_html += f"<tr><td>{row['day']}</td><td>{row['dest']}</td><td>{row['sms_count']}</td></tr>"
@@ -240,15 +239,13 @@ def reports():
     return render_template("dashboard.html", summary_data=summary_data, username=session.get("username"), show_section="report")
 
 # ----------------------------
-# Templates Page (Separate)
+# Templates Page
 # ----------------------------
 @app.route("/templates")
 @login_required
 def templates():
     search = request.args.get("search", "")
-
     cursor = db.cursor(dictionary=True)
-
     if search:
         cursor.execute("""
             SELECT * FROM sms_templates
@@ -262,19 +259,15 @@ def templates():
             ORDER BY id DESC
             LIMIT 10
         """, (session["user_id"],))
-
     templates = cursor.fetchall()
 
-    return render_template(
-        "templates.html",
-        templates=templates,
-        search=search,
-        username=session.get("username")
-    )
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return render_template("templates_list.html", templates=templates)
 
+    return render_template("templates.html", templates=templates, search=search, username=session.get("username"))
 
 # ----------------------------
-# CREATE TEMPLATE (AJAX)
+# AJAX: Add Template
 # ----------------------------
 @app.route("/templates/add", methods=["POST"])
 @login_required
@@ -289,17 +282,11 @@ def add_template():
     """, (session["user_id"], name, message))
     db.commit()
 
-    # Return the newly added template as JSON
     template_id = cursor.lastrowid
-    return {
-        "id": template_id,
-        "name": name,
-        "message": message
-    }
-
+    return jsonify({"id": template_id, "name": name, "message": message, "success": True})
 
 # ----------------------------
-# UPDATE TEMPLATE (AJAX)
+# AJAX: Update Template
 # ----------------------------
 @app.route("/templates/update/<int:id>", methods=["POST"])
 @login_required
@@ -315,15 +302,10 @@ def update_template(id):
     """, (name, message, id, session["user_id"]))
     db.commit()
 
-    return {
-        "id": id,
-        "name": name,
-        "message": message
-    }
-
+    return jsonify({"id": id, "name": name, "message": message, "success": True})
 
 # ----------------------------
-# DELETE TEMPLATE (AJAX)
+# AJAX: Delete Template
 # ----------------------------
 @app.route("/templates/delete/<int:id>", methods=["POST"])
 @login_required
@@ -334,11 +316,10 @@ def delete_template(id):
         WHERE id=%s AND user_id=%s
     """, (id, session["user_id"]))
     db.commit()
-    return {"status": "deleted", "id": id}
-
+    return jsonify({"id": id, "status": "deleted", "success": True})
 
 # ----------------------------
-# PREVENT BROWSER CACHE
+# Prevent Browser Cache
 # ----------------------------
 @app.after_request
 def add_header(response):
@@ -346,7 +327,6 @@ def add_header(response):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
-
 
 # ----------------------------
 # Run Flask
