@@ -131,6 +131,9 @@ th, td {
     background:#ecfdf5;
 }
 </style>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 </head>
 
 <body>
@@ -159,16 +162,13 @@ th, td {
 
     <!-- SEARCH -->
     <div class="card">
-        <form method="GET">
-            <input type="text" name="search" placeholder="Search template name..." value="{{ search }}">
-            <button type="submit">Search</button>
-        </form>
+        <input type="text" id="search-input" placeholder="Search template name..." value="{{ search }}">
     </div>
 
     <!-- CREATE -->
     <div class="card" id="create-box" style="display:none;">
         <h3>Create Template</h3>
-        <form method="POST" action="{{ url_for('add_template') }}">
+        <form id="template-form">
             <input type="text" name="name" placeholder="Template Name" required>
             <textarea name="message" placeholder="Message" required></textarea>
             <button type="submit">Save</button>
@@ -176,7 +176,7 @@ th, td {
     </div>
 
     <!-- LIST -->
-    <div class="card" id="saved">
+    <div class="card" id="templates-list">
         <h3>Latest Templates</h3>
 
         {% if templates %}
@@ -192,25 +192,13 @@ th, td {
 
             <tbody>
             {% for t in templates %}
-            <tr class="{% if loop.index == 1 %}highlight{% endif %}">
-                <td>{{ t.name }}</td>
-                <td>{{ t.message }}</td>
+            <tr data-id="{{ t.id }}" class="{% if loop.index == 1 %}highlight{% endif %}">
+                <td class="t-name">{{ t.name }}</td>
+                <td class="t-message">{{ t.message }}</td>
                 <td>{{ t.created_at }}</td>
                 <td class="actions">
-
-                    <!-- UPDATE -->
-                    <form method="POST" action="{{ url_for('update_template', id=t.id) }}">
-                        <input type="text" name="name" value="{{ t.name }}">
-                        <textarea name="message">{{ t.message }}</textarea>
-                        <button class="secondary-btn">Update</button>
-                    </form>
-
-                    <!-- DELETE -->
-                    <a href="{{ url_for('delete_template', id=t.id) }}"
-                       onclick="return confirm('Delete template?')">
-                       Delete
-                    </a>
-
+                    <button class="secondary-btn update-btn">Update</button>
+                    <button class="delete-btn" style="background:red;">Delete</button>
                 </td>
             </tr>
             {% endfor %}
@@ -229,10 +217,57 @@ function toggleCreate(){
     box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
-// hide create after submit
-if (window.location.hash === "#saved") {
-    document.getElementById("create-box").style.display = "none";
-}
+// AJAX Create
+$('#template-form').submit(function(e){
+    e.preventDefault();
+    $.post("{{ url_for('add_template') }}", $(this).serialize(), function(template){
+        const row = `
+        <tr data-id="${template.id}">
+            <td class="t-name">${template.name}</td>
+            <td class="t-message">${template.message}</td>
+            <td>Just now</td>
+            <td class="actions">
+                <button class="secondary-btn update-btn">Update</button>
+                <button class="delete-btn" style="background:red;">Delete</button>
+            </td>
+        </tr>`;
+        $('#templates-list tbody').prepend(row);
+        $('#template-form')[0].reset();
+        toggleCreate();
+    });
+});
+
+// AJAX Search
+$('#search-input').on('input', function(){
+    const search = $(this).val();
+    $.get("{{ url_for('templates') }}", {search: search}, function(data){
+        const html = $(data).find('#templates-list tbody').html();
+        $('#templates-list tbody').html(html);
+    });
+});
+
+// AJAX Delete
+$(document).on('click', '.delete-btn', function(){
+    const row = $(this).closest('tr');
+    const id = row.data('id');
+    if(confirm("Delete this template?")){
+        $.post(`/templates/delete/${id}`, {}, function(){ row.remove(); });
+    }
+});
+
+// AJAX Update
+$(document).on('click', '.update-btn', function(){
+    const row = $(this).closest('tr');
+    const id = row.data('id');
+    const name = prompt("Update template name:", row.find('.t-name').text());
+    const message = prompt("Update template message:", row.find('.t-message').text());
+    if(name && message){
+        $.post(`/templates/update/${id}`, {name:name, message:message}, function(template){
+            row.find('.t-name').text(template.name);
+            row.find('.t-message').text(template.message);
+        });
+    }
+});
 </script>
 
 </body>

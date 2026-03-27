@@ -274,7 +274,7 @@ def templates():
 
 
 # ----------------------------
-# CREATE TEMPLATE
+# CREATE TEMPLATE (AJAX)
 # ----------------------------
 @app.route("/templates/add", methods=["POST"])
 @login_required
@@ -282,19 +282,24 @@ def add_template():
     name = request.form.get("name")
     message = request.form.get("message")
 
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
     cursor.execute("""
         INSERT INTO sms_templates (user_id, name, message)
         VALUES (%s, %s, %s)
     """, (session["user_id"], name, message))
     db.commit()
 
-    # Redirect without #saved to prevent caching issues
-    return redirect(url_for("templates"))
+    # Return the newly added template as JSON
+    template_id = cursor.lastrowid
+    return {
+        "id": template_id,
+        "name": name,
+        "message": message
+    }
 
 
 # ----------------------------
-# UPDATE TEMPLATE
+# UPDATE TEMPLATE (AJAX)
 # ----------------------------
 @app.route("/templates/update/<int:id>", methods=["POST"])
 @login_required
@@ -310,13 +315,17 @@ def update_template(id):
     """, (name, message, id, session["user_id"]))
     db.commit()
 
-    return redirect(url_for("templates"))
+    return {
+        "id": id,
+        "name": name,
+        "message": message
+    }
 
 
 # ----------------------------
-# DELETE TEMPLATE
+# DELETE TEMPLATE (AJAX)
 # ----------------------------
-@app.route("/templates/delete/<int:id>")
+@app.route("/templates/delete/<int:id>", methods=["POST"])
 @login_required
 def delete_template(id):
     cursor = db.cursor()
@@ -325,8 +334,7 @@ def delete_template(id):
         WHERE id=%s AND user_id=%s
     """, (id, session["user_id"]))
     db.commit()
-
-    return redirect(url_for("templates"))
+    return {"status": "deleted", "id": id}
 
 
 # ----------------------------
