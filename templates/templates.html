@@ -1,86 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Templates</title>
+<meta charset="UTF-8">
+<title>Templates - San SMS Platform</title>
+
 <style>
-body { font-family: Arial; background:#f4f4f4; padding:20px; }
-.card { background:white; padding:20px; margin-bottom:20px; border-radius:8px; }
-input, textarea { width:100%; padding:8px; margin:5px 0; }
-button { padding:8px 12px; background:#2563eb; color:white; border:none; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { padding:10px; border-bottom:1px solid #ddd; }
-a { color:red; text-decoration:none; }
-.top-bar { display:flex; justify-content:space-between; align-items:center; }
+* { box-sizing: border-box; margin:0; padding:0; font-family:"Segoe UI", Arial, sans-serif; }
+body { background:#f8f7f7fb; color:#333; }
+
+/* HEADER */
+header { 
+    background:#02142e; 
+    color:white; 
+    padding:15px 20px; 
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center;
+}
+header .title { font-size:20px; font-weight:600; }
+header .user { font-size:14px; }
+
+/* SIDEBAR */
+.sidebar {
+    height:100vh; width:230px; position:fixed;
+    top:0; left:0; background:#02142e;
+    padding-top:70px; display:flex; flex-direction:column;
+}
+.sidebar button {
+    background:none; border:none; color:white;
+    text-align:left; padding:14px 20px;
+    cursor:pointer; width:100%;
+}
+.sidebar button:hover { background:#02060f; }
+
+.logout-btn {
+    position:absolute; bottom:10px; width:180px;
+    background:#ef4444; color:white;
+    border:none; padding:10px; border-radius:6px;
+}
+
+/* MAIN */
+.main { margin-left:230px; padding:30px; }
+
+.card {
+    background:white; padding:20px;
+    border-radius:10px; margin-bottom:20px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.05);
+}
+
+input, textarea {
+    width:100%; padding:10px;
+    margin-bottom:10px;
+    border:1px solid #ddd;
+    border-radius:6px;
+}
+
+button {
+    padding:8px 12px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.secondary-btn {
+    background:#10b981;
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+}
+
+th, td {
+    padding:10px;
+    border-bottom:1px solid #eee;
+}
+
+.actions a {
+    color:red;
+    margin-left:10px;
+    text-decoration:none;
+}
+
+.top-bar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:15px;
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="top-bar">
-    <h2>SMS Templates</h2>
-    <a href="{{ url_for('dashboard') }}">⬅ Back to Dashboard</a>
-</div>
+<header>
+    <div class="title">🚀 San SMS Platform</div>
+    <div class="user">Welcome, {{ username }}</div>
+</header>
 
-<!-- SEARCH -->
-<div class="card">
-    <form method="GET">
-        <input type="text" name="search" placeholder="Search by template name..." value="{{ search }}">
-        <button type="submit">Search</button>
+<div class="sidebar">
+    <button onclick="window.location='{{ url_for('dashboard') }}'">Dashboard</button>
+    <button onclick="window.location='{{ url_for('templates') }}'">Templates</button>
+
+    <form method="GET" action="{{ url_for('logout') }}">
+        <button class="logout-btn">Logout</button>
     </form>
 </div>
 
-<!-- CREATE -->
-<div class="card">
-    <h3>Create Template</h3>
-    <form method="POST" action="{{ url_for('add_template') }}">
-        <input type="text" name="name" placeholder="Template Name" required>
-        <textarea name="message" placeholder="Message" required></textarea>
-        <button type="submit">Save</button>
-    </form>
-</div>
+<div class="main">
 
-<!-- LIST -->
-<div class="card">
-    <h3>Saved Templates</h3>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <h2>Templates</h2>
 
-    {% if templates %}
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Message</th>
-                <th>Created</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for t in templates %}
+        <div>
+            <button onclick="toggleCreate()">+ Create Template</button>
+        </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="card">
+        <form method="GET">
+            <input type="text" name="search" placeholder="Search template name..." value="{{ search }}">
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+    <!-- CREATE (HIDDEN TOGGLE) -->
+    <div class="card" id="create-box" style="display:none;">
+        <h3>Create Template</h3>
+        <form method="POST" action="{{ url_for('add_template') }}">
+            <input type="text" name="name" placeholder="Template Name" required>
+            <textarea name="message" placeholder="Message" required></textarea>
+            <button type="submit">Save</button>
+        </form>
+    </div>
+
+    <!-- LIST -->
+    <div class="card">
+        <h3>Saved Templates</h3>
+
+        {% if templates %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Message</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for t in templates %}
             <tr>
                 <td>{{ t.name }}</td>
                 <td>{{ t.message }}</td>
                 <td>{{ t.created_at }}</td>
-                <td>
+                <td class="actions">
+
                     <!-- UPDATE -->
                     <form method="POST" action="{{ url_for('update_template', id=t.id) }}">
                         <input type="text" name="name" value="{{ t.name }}">
                         <textarea name="message">{{ t.message }}</textarea>
-                        <button type="submit">Update</button>
+                        <button class="secondary-btn">Update</button>
                     </form>
 
                     <!-- DELETE -->
-                    <a href="{{ url_for('delete_template', id=t.id) }}" 
+                    <a href="{{ url_for('delete_template', id=t.id) }}"
                        onclick="return confirm('Delete template?')">
                        Delete
                     </a>
+
                 </td>
             </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>No templates found</p>
-    {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No templates found</p>
+        {% endif %}
+    </div>
+
 </div>
+
+<script>
+function toggleCreate(){
+    const box = document.getElementById("create-box");
+    box.style.display = box.style.display === "none" ? "block" : "none";
+}
+</script>
 
 </body>
 </html>
