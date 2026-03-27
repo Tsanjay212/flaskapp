@@ -250,25 +250,30 @@ def templates():
     cursor = db.cursor(dictionary=True)
 
     if search:
-    cursor.execute("""
-        SELECT * FROM sms_templates
-        WHERE user_id=%s AND name LIKE %s
-        ORDER BY id DESC
-    """, (session["user_id"], f"%{search}%"))
+        cursor.execute("""
+            SELECT * FROM sms_templates
+            WHERE user_id=%s AND name LIKE %s
+            ORDER BY id DESC
+        """, (session["user_id"], f"%{search}%"))
     else:
-    cursor.execute("""
-        SELECT * FROM sms_templates
-        WHERE user_id=%s
-        ORDER BY id DESC
-        LIMIT 10
-    """, (session["user_id"],)) 
+        cursor.execute("""
+            SELECT * FROM sms_templates
+            WHERE user_id=%s
+            ORDER BY id DESC
+            LIMIT 10
+        """, (session["user_id"],))
 
     templates = cursor.fetchall()
 
-    return render_template("templates.html", templates=templates, search=search)
+    return render_template(
+        "templates.html",
+        templates=templates,
+        search=search,
+        username=session.get("username")
+    )
 
 
-# CREATE
+# CREATE TEMPLATE
 @app.route("/templates/add", methods=["POST"])
 @login_required
 def add_template():
@@ -282,11 +287,10 @@ def add_template():
     """, (session["user_id"], name, message))
     db.commit()
 
-    flash("Template created successfully!", "success")
-    return redirect(url_for("templates"))
+    return redirect(url_for("templates") + "#saved")
 
 
-# UPDATE
+# UPDATE TEMPLATE
 @app.route("/templates/update/<int:id>", methods=["POST"])
 @login_required
 def update_template(id):
@@ -301,10 +305,10 @@ def update_template(id):
     """, (name, message, id, session["user_id"]))
     db.commit()
 
-    flash("Template updated!", "success")
-    return redirect(url_for("templates"))
+    return redirect(url_for("templates") + "#saved")
 
-# DELETE
+
+# DELETE TEMPLATE
 @app.route("/templates/delete/<int:id>")
 @login_required
 def delete_template(id):
@@ -315,15 +319,8 @@ def delete_template(id):
     """, (id, session["user_id"]))
     db.commit()
 
-    flash("Template deleted!", "success")
-    return redirect(url_for("templates"))
+    return redirect(url_for("templates") + "#saved")
 
-return render_template(
-    "templates.html",
-    templates=templates,
-    search=search,
-    username=session.get("username")
-)
 
 # ----------------------------
 # Run Flask
