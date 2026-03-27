@@ -51,6 +51,7 @@ header {
     text-align:left;
     width:100%;
     cursor:pointer;
+    font-size:14px;
 }
 
 .sidebar button:hover,
@@ -100,10 +101,15 @@ button {
     cursor:pointer;
 }
 
+button:hover {
+    opacity:0.9;
+}
+
 .secondary-btn {
     background:#10b981;
 }
 
+/* TABLE */
 table {
     width:100%;
     border-collapse: collapse;
@@ -111,21 +117,29 @@ table {
 }
 
 th, td {
-    padding:10px;
+    padding:12px;
     border-bottom:1px solid #eee;
+    text-align:left;
+    vertical-align:middle;
     word-wrap: break-word;
-    vertical-align: top;
 }
 
 th:nth-child(1), td:nth-child(1) { width: 20%; }
 th:nth-child(2), td:nth-child(2) { width: 50%; }
 th:nth-child(3), td:nth-child(3) { width: 15%; }
-th:nth-child(4), td:nth-child(4) { width: 15%; }
+th:nth-child(4), td:nth-child(4) { width: 15%; text-align:center; }
 
-.actions a {
-    color:red;
-    margin-left:10px;
-    text-decoration:none;
+.actions button {
+    padding:5px 10px;
+    border:none;
+    border-radius:5px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+}
+
+.actions button:hover {
+    background:#1d4ed8;
 }
 
 .top-bar {
@@ -143,8 +157,8 @@ th:nth-child(4), td:nth-child(4) { width: 15%; }
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
     display: block;
+    max-width: 100%;
 }
 </style>
 </head>
@@ -210,11 +224,13 @@ th:nth-child(4), td:nth-child(4) { width: 15%; }
             </thead>
             <tbody id="template-table">
             {% for t in templates %}
-            <tr class="template-row" onclick="editTemplate({{ t.id }}, '{{ t.name|replace("'", "\\'") }}', '{{ t.message|replace("'", "\\'") }}')">
+            <tr class="template-row">
                 <td>{{ t.name }}</td>
                 <td><span class="message-truncate">{{ t.message }}</span></td>
                 <td>{{ t.created_at }}</td>
-                <td>Click to Edit</td>
+                <td class="actions">
+                    <button onclick="editTemplate({{ t.id }}, '{{ t.name|replace("'", "\\'") }}', '{{ t.message|replace("'", "\\'") }}'); event.stopPropagation();">Edit</button>
+                </td>
             </tr>
             {% endfor %}
             </tbody>
@@ -272,20 +288,30 @@ document.getElementById("template-form").addEventListener("submit", function(e) 
     .then(data => {
         if (id) {
             // Update row
-            const row = document.querySelector(`.template-row[onclick*='${id}']`);
-            row.cells[0].innerText = data.name;
-            row.cells[1].innerHTML = `<span class="message-truncate">${data.message}</span>`;
-            row.cells[3].innerText = "Click to Edit";
+            const rows = document.querySelectorAll(".template-row");
+            rows.forEach(row => {
+                const btn = row.querySelector("button");
+                if (btn && btn.getAttribute("onclick").includes(id)) {
+                    row.cells[0].innerText = data.name;
+                    row.cells[1].innerHTML = `<span class="message-truncate">${data.message}</span>`;
+                }
+            });
         } else {
             // Add new row
             const tbody = document.getElementById("template-table");
             const newRow = tbody.insertRow(0);
             newRow.classList.add("template-row");
-            newRow.setAttribute("onclick", `editTemplate(${data.id}, '${data.name.replace(/'/g,"\\'")}', '${data.message.replace(/'/g,"\\'")}')`);
             newRow.insertCell(0).innerText = data.name;
             newRow.insertCell(1).innerHTML = `<span class="message-truncate">${data.message}</span>`;
             newRow.insertCell(2).innerText = new Date().toISOString().split('T')[0];
-            newRow.insertCell(3).innerText = "Click to Edit";
+            const cellActions = newRow.insertCell(3);
+            const editBtn = document.createElement("button");
+            editBtn.innerText = "Edit";
+            editBtn.onclick = function() {
+                editTemplate(data.id, data.name, data.message);
+                event.stopPropagation();
+            };
+            cellActions.appendChild(editBtn);
         }
         closeForm();
     });
@@ -301,8 +327,13 @@ document.getElementById("delete-btn").addEventListener("click", function() {
     .then(res => res.json())
     .then(data => {
         if (data.status === "deleted") {
-            const row = document.querySelector(`.template-row[onclick*='${id}']`);
-            row.remove();
+            const rows = document.querySelectorAll(".template-row");
+            rows.forEach(row => {
+                const btn = row.querySelector("button");
+                if (btn && btn.getAttribute("onclick").includes(id)) {
+                    row.remove();
+                }
+            });
             closeForm();
         }
     });
