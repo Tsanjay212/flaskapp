@@ -42,6 +42,7 @@ tr:hover { background:#f9fafb; }
 <div class="sidebar">
     <button class="toggle-btn" data-target="send-section">Send SMS</button>
     <button class="toggle-btn" data-target="report-section">Reports</button>
+    <button onclick="window.location='{{ url_for('templates') }}'">Templates</button>
     <button class="toggle-btn" onclick="window.location='{{ url_for('templates') }}'">Templates</button>
     <form method="GET" action="{{ url_for('logout') }}">
         <button class="logout-btn" type="submit">Logout</button>

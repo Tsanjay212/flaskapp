@@ -240,29 +240,35 @@ def reports():
     return render_template("dashboard.html", summary_data=summary_data, username=session.get("username"), show_section="report")
 
 # ----------------------------
-# SMS Templates Feature
+# Templates Page (Separate)
 # ----------------------------
-
 @app.route("/templates")
 @login_required
 def templates():
+    search = request.args.get("search", "")
+
     cursor = db.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT id, name, message, created_at 
-        FROM sms_templates 
-        WHERE user_id=%s 
-        ORDER BY id DESC
-    """, (session["user_id"],))
+
+    if search:
+        cursor.execute("""
+            SELECT * FROM sms_templates
+            WHERE user_id=%s AND name LIKE %s
+            ORDER BY id DESC
+        """, (session["user_id"], f"%{search}%"))
+    else:
+        cursor.execute("""
+            SELECT * FROM sms_templates
+            WHERE user_id=%s
+            ORDER BY id DESC
+        """, (session["user_id"],))
+
     templates = cursor.fetchall()
-    return render_template(
-        "dashboard.html",
-        templates=templates,
-        username=session.get("username"),
-        show_section="template-section"
-    )
+
+    return render_template("templates.html", templates=templates, search=search)
 
 
-@app.route("/add_template", methods=["POST"])
+# CREATE
+@app.route("/templates/add", methods=["POST"])
 @login_required
 def add_template():
     name = request.form.get("name")
@@ -270,15 +276,17 @@ def add_template():
 
     cursor = db.cursor()
     cursor.execute("""
-        INSERT INTO sms_templates (user_id, name, message) 
+        INSERT INTO sms_templates (user_id, name, message)
         VALUES (%s, %s, %s)
     """, (session["user_id"], name, message))
     db.commit()
 
+    flash("Template created successfully!", "success")
     return redirect(url_for("templates"))
 
 
-@app.route("/update_template/<int:id>", methods=["POST"])
+# UPDATE
+@app.route("/templates/update/<int:id>", methods=["POST"])
 @login_required
 def update_template(id):
     name = request.form.get("name")
@@ -286,25 +294,28 @@ def update_template(id):
 
     cursor = db.cursor()
     cursor.execute("""
-        UPDATE sms_templates 
-        SET name=%s, message=%s 
+        UPDATE sms_templates
+        SET name=%s, message=%s
         WHERE id=%s AND user_id=%s
     """, (name, message, id, session["user_id"]))
     db.commit()
 
+    flash("Template updated!", "success")
     return redirect(url_for("templates"))
 
 
-@app.route("/delete_template/<int:id>")
+# DELETE
+@app.route("/templates/delete/<int:id>")
 @login_required
 def delete_template(id):
     cursor = db.cursor()
     cursor.execute("""
-        DELETE FROM sms_templates 
+        DELETE FROM sms_templates
         WHERE id=%s AND user_id=%s
     """, (id, session["user_id"]))
     db.commit()
 
+    flash("Template deleted!", "success")
     return redirect(url_for("templates"))
 
 # ----------------------------
