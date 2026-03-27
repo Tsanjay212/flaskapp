@@ -2,54 +2,75 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Templates - San SMS Platform</title>
+<title>Manage Templates</title>
 
 <style>
 * { box-sizing: border-box; margin:0; padding:0; font-family:"Segoe UI", Arial, sans-serif; }
 body { background:#f8f7f7fb; color:#333; }
 
 /* HEADER */
-header { 
-    background:#02142e; 
-    color:white; 
-    padding:15px 20px; 
-    display:flex; 
-    justify-content:space-between; 
+header {
+    background:#02142e;
+    color:white;
+    padding:15px 20px;
+    display:flex;
+    justify-content:space-between;
     align-items:center;
 }
-header .title { font-size:20px; font-weight:600; }
-header .user { font-size:14px; }
+.title { font-size:20px; font-weight:600; }
+.user { font-size:14px; }
 
 /* SIDEBAR */
 .sidebar {
-    height:100vh; width:230px; position:fixed;
-    top:0; left:0; background:#02142e;
-    padding-top:70px; display:flex; flex-direction:column;
+    height:100vh;
+    width:230px;
+    position:fixed;
+    top:0;
+    left:0;
+    background:#02142e;
+    padding-top:70px;
 }
 .sidebar button {
-    background:none; border:none; color:white;
-    text-align:left; padding:14px 20px;
-    cursor:pointer; width:100%;
+    background:none;
+    border:none;
+    color:white;
+    padding:14px 20px;
+    text-align:left;
+    width:100%;
+    cursor:pointer;
 }
-.sidebar button:hover { background:#02060f; }
+.sidebar button:hover, .sidebar .active {
+    background:#02060f;
+}
 
 .logout-btn {
-    position:absolute; bottom:10px; width:180px;
-    background:#ef4444; color:white;
-    border:none; padding:10px; border-radius:6px;
+    position:absolute;
+    bottom:10px;
+    width:180px;
+    background:#ef4444;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:6px;
 }
 
 /* MAIN */
-.main { margin-left:230px; padding:30px; }
+.main {
+    margin-left:230px;
+    padding:30px;
+}
 
 .card {
-    background:white; padding:20px;
-    border-radius:10px; margin-bottom:20px;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
     box-shadow:0 4px 12px rgba(0,0,0,0.05);
 }
 
 input, textarea {
-    width:100%; padding:10px;
+    width:100%;
+    padding:10px;
     margin-bottom:10px;
     border:1px solid #ddd;
     border-radius:6px;
@@ -91,19 +112,22 @@ th, td {
     margin-bottom:15px;
 }
 
+.highlight {
+    background:#ecfdf5;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-    <div class="title">🚀 San SMS Platform</div>
-    <div class="user">Welcome, {{ username }}</div>
+    <div class="title">🚀 San-Sms-T-Platform</div>
+    <div class="user">👤 {{ username }}</div>
 </header>
 
 <div class="sidebar">
     <button onclick="window.location='{{ url_for('dashboard') }}'">Dashboard</button>
-    <button onclick="window.location='{{ url_for('templates') }}'">Templates</button>
+    <button class="active">Manage Templates</button>
 
     <form method="GET" action="{{ url_for('logout') }}">
         <button class="logout-btn">Logout</button>
@@ -112,13 +136,10 @@ th, td {
 
 <div class="main">
 
-    <!-- TOP BAR -->
+    <!-- TOP -->
     <div class="top-bar">
-        <h2>Templates</h2>
-
-        <div>
-            <button onclick="toggleCreate()">+ Create Template</button>
-        </div>
+        <h2>Manage Templates</h2>
+        <button onclick="toggleCreate()">+ Create Template</button>
     </div>
 
     <!-- SEARCH -->
@@ -129,7 +150,7 @@ th, td {
         </form>
     </div>
 
-    <!-- CREATE (HIDDEN TOGGLE) -->
+    <!-- CREATE -->
     <div class="card" id="create-box" style="display:none;">
         <h3>Create Template</h3>
         <form method="POST" action="{{ url_for('add_template') }}">
@@ -140,8 +161,8 @@ th, td {
     </div>
 
     <!-- LIST -->
-    <div class="card">
-        <h3>Saved Templates</h3>
+    <div class="card" id="saved">
+        <h3>Latest Templates</h3>
 
         {% if templates %}
         <table>
@@ -156,7 +177,7 @@ th, td {
 
             <tbody>
             {% for t in templates %}
-            <tr>
+            <tr class="{% if loop.index == 1 %}highlight{% endif %}">
                 <td>{{ t.name }}</td>
                 <td>{{ t.message }}</td>
                 <td>{{ t.created_at }}</td>
@@ -191,6 +212,11 @@ th, td {
 function toggleCreate(){
     const box = document.getElementById("create-box");
     box.style.display = box.style.display === "none" ? "block" : "none";
+}
+
+// hide create after submit
+if (window.location.hash === "#saved") {
+    document.getElementById("create-box").style.display = "none";
 }
 </script>
 

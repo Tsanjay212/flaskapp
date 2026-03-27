@@ -250,17 +250,18 @@ def templates():
     cursor = db.cursor(dictionary=True)
 
     if search:
-        cursor.execute("""
-            SELECT * FROM sms_templates
-            WHERE user_id=%s AND name LIKE %s
-            ORDER BY id DESC
-        """, (session["user_id"], f"%{search}%"))
+    cursor.execute("""
+        SELECT * FROM sms_templates
+        WHERE user_id=%s AND name LIKE %s
+        ORDER BY id DESC
+    """, (session["user_id"], f"%{search}%"))
     else:
-        cursor.execute("""
-            SELECT * FROM sms_templates
-            WHERE user_id=%s
-            ORDER BY id DESC
-        """, (session["user_id"],))
+    cursor.execute("""
+        SELECT * FROM sms_templates
+        WHERE user_id=%s
+        ORDER BY id DESC
+        LIMIT 10
+    """, (session["user_id"],)) 
 
     templates = cursor.fetchall()
 
@@ -303,7 +304,6 @@ def update_template(id):
     flash("Template updated!", "success")
     return redirect(url_for("templates"))
 
-
 # DELETE
 @app.route("/templates/delete/<int:id>")
 @login_required
@@ -317,6 +317,13 @@ def delete_template(id):
 
     flash("Template deleted!", "success")
     return redirect(url_for("templates"))
+
+return render_template(
+    "templates.html",
+    templates=templates,
+    search=search,
+    username=session.get("username")
+)
 
 # ----------------------------
 # Run Flask
