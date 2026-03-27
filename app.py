@@ -242,27 +242,70 @@ def reports():
 # ----------------------------
 # SMS Templates Feature
 # ----------------------------
-@app.route("/sms_templates", methods=["GET"])
-@login_required
-def get_templates():
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT name, message FROM sms_templates WHERE user_id=%s ORDER BY id DESC", (session["user_id"],))
-    templates = cursor.fetchall()
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return {"templates": templates}
-    return render_template("dashboard.html", templates=templates, show_section="sms-feature-section")
 
-@app.route("/save_template", methods=["POST"])
+@app.route("/templates")
 @login_required
-def save_template():
-    name = request.form.get("template_name", "").strip()
-    message = request.form.get("template_message", "").strip()
-    if not name or not message:
-        return {"status":"error","message":"Name and message required"}
+def templates():
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT id, name, message, created_at 
+        FROM sms_templates 
+        WHERE user_id=%s 
+        ORDER BY id DESC
+    """, (session["user_id"],))
+    templates = cursor.fetchall()
+    return render_template(
+        "dashboard.html",
+        templates=templates,
+        username=session.get("username"),
+        show_section="template-section"
+    )
+
+
+@app.route("/add_template", methods=["POST"])
+@login_required
+def add_template():
+    name = request.form.get("name")
+    message = request.form.get("message")
+
     cursor = db.cursor()
-    cursor.execute("INSERT INTO sms_templates (user_id, name, message) VALUES (%s,%s,%s)", (session["user_id"], name, message))
+    cursor.execute("""
+        INSERT INTO sms_templates (user_id, name, message) 
+        VALUES (%s, %s, %s)
+    """, (session["user_id"], name, message))
     db.commit()
-    return {"status":"success","message":"Template saved successfully!"}
+
+    return redirect(url_for("templates"))
+
+
+@app.route("/update_template/<int:id>", methods=["POST"])
+@login_required
+def update_template(id):
+    name = request.form.get("name")
+    message = request.form.get("message")
+
+    cursor = db.cursor()
+    cursor.execute("""
+        UPDATE sms_templates 
+        SET name=%s, message=%s 
+        WHERE id=%s AND user_id=%s
+    """, (name, message, id, session["user_id"]))
+    db.commit()
+
+    return redirect(url_for("templates"))
+
+
+@app.route("/delete_template/<int:id>")
+@login_required
+def delete_template(id):
+    cursor = db.cursor()
+    cursor.execute("""
+        DELETE FROM sms_templates 
+        WHERE id=%s AND user_id=%s
+    """, (id, session["user_id"]))
+    db.commit()
+
+    return redirect(url_for("templates"))
 
 # ----------------------------
 # Run Flask
