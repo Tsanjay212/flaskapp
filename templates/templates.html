@@ -14,11 +14,23 @@ header {
     color:white;
     padding:15px 20px;
     display:flex;
-    justify-content:space-between;
     align-items:center;
+    justify-content:space-between;
+    position:relative;
 }
-.title { font-size:20px; font-weight:600; }
-.user { font-size:14px; }
+
+.title {
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:20px;
+    font-weight:600;
+}
+
+.user {
+    margin-left:auto;
+    font-size:14px;
+}
 
 /* SIDEBAR */
 .sidebar {
@@ -30,6 +42,7 @@ header {
     background:#02142e;
     padding-top:70px;
 }
+
 .sidebar button {
     background:none;
     border:none;
@@ -39,7 +52,9 @@ header {
     width:100%;
     cursor:pointer;
 }
-.sidebar button:hover, .sidebar .active {
+
+.sidebar button:hover,
+.sidebar .active {
     background:#02060f;
 }
 
