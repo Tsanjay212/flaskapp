@@ -234,6 +234,12 @@ if (window.location.hash === "#saved") {
     document.getElementById("create-box").style.display = "none";
 }
 </script>
+<script>
+// Fix blank issue after save
+if (window.location.search.includes("refresh=1")) {
+    window.history.replaceState({}, document.title, "/templates#saved");
+}
+</script>
 
 </body>
 </html>

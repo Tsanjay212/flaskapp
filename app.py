@@ -246,6 +246,7 @@ def reports():
 @login_required
 def templates():
     search = request.args.get("search", "")
+    refresh = request.args.get("refresh")
 
     cursor = db.cursor(dictionary=True)
 
