@@ -246,7 +246,6 @@ def reports():
 @login_required
 def templates():
     search = request.args.get("search", "")
-    refresh = request.args.get("refresh")
 
     cursor = db.cursor(dictionary=True)
 
@@ -274,7 +273,9 @@ def templates():
     )
 
 
+# ----------------------------
 # CREATE TEMPLATE
+# ----------------------------
 @app.route("/templates/add", methods=["POST"])
 @login_required
 def add_template():
@@ -288,10 +289,13 @@ def add_template():
     """, (session["user_id"], name, message))
     db.commit()
 
-    return redirect(url_for("templates") + "#saved")
+    # Redirect without #saved to prevent caching issues
+    return redirect(url_for("templates"))
 
 
+# ----------------------------
 # UPDATE TEMPLATE
+# ----------------------------
 @app.route("/templates/update/<int:id>", methods=["POST"])
 @login_required
 def update_template(id):
@@ -306,10 +310,12 @@ def update_template(id):
     """, (name, message, id, session["user_id"]))
     db.commit()
 
-    return redirect(url_for("templates") + "#saved")
+    return redirect(url_for("templates"))
 
 
+# ----------------------------
 # DELETE TEMPLATE
+# ----------------------------
 @app.route("/templates/delete/<int:id>")
 @login_required
 def delete_template(id):
@@ -320,7 +326,18 @@ def delete_template(id):
     """, (id, session["user_id"]))
     db.commit()
 
-    return redirect(url_for("templates") + "#saved")
+    return redirect(url_for("templates"))
+
+
+# ----------------------------
+# PREVENT BROWSER CACHE
+# ----------------------------
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 # ----------------------------
