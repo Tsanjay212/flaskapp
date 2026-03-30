@@ -224,7 +224,7 @@ th:nth-child(4), td:nth-child(4) { width: 15%; text-align:center; }
             <td><span class="message-truncate">{{ t.message }}</span></td>
             <td>{{ t.created_at }}</td>
             <td class="actions">
-                <button onclick="editTemplate({{ t.id }}, '{{ t.name|replace(\"'\", \"\\\\'\") }}', '{{ t.message|replace(\"'\", \"\\\\'\") }}'); event.stopPropagation();">
+                <button onclick="editTemplate({{ t.id }}, {{ t.name|tojson }}, {{ t.message|tojson }}); event.stopPropagation();">
                     Edit
                 </button>
             </td>
