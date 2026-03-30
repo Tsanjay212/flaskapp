@@ -136,8 +136,8 @@ th:nth-child(5), td:nth-child(5) { width: 10%; text-align:center; }
             <td>{{ t.created_at }}</td>
             <td class="actions">
                <button onclick='editTemplate({{ t.id }}, {{ t.name|tojson }}, {{ t.message|tojson }})'>Edit</button>
-               <button onclick='deleteTemplate({{ t.id }})' style="background:#ef4444;">Delete</button>
-<           /td>
+               <button class="delete-btn" onclick='deleteTemplate({{ t.id }})'>Delete</button>
+            </td>
         </tr>
         {% endfor %}
         </tbody>
@@ -198,6 +198,7 @@ function saveTemplate() {
     .then(res => res.json())
     .then(data => {
         closeModal();
+        let table = document.getElementById("template-table");
         if(id){
             // update row
             let row = document.getElementById("row-"+id);
@@ -207,7 +208,6 @@ function saveTemplate() {
             setTimeout(()=>row.classList.remove("highlight"),2000);
         } else {
             // insert new row on top
-            let table = document.getElementById("template-table");
             let newRow = `
             <tr id="row-${data.id}" class="highlight">
                 <td><b>${data.template_code || '----'}</b></td>
@@ -220,6 +220,9 @@ function saveTemplate() {
                 </td>
             </tr>`;
             table.insertAdjacentHTML("afterbegin", newRow);
+            // Keep only latest 10 templates
+            while(table.rows.length > 10){ table.deleteRow(10); }
+            setTimeout(()=>document.getElementById("row-"+data.id).classList.remove("highlight"),2000);
         }
     })
     .catch(err=>{ console.error(err); alert("Error saving template"); });
@@ -233,7 +236,6 @@ function deleteTemplate(id){
     .then(res => res.json())
     .then(data => {
         if(data.success){
-            // remove row from table
             let row = document.getElementById("row-" + id);
             if(row) row.remove();
         } else {
