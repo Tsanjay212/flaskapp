@@ -276,14 +276,38 @@ def add_template():
     message = request.form.get("message")
 
     cursor = db.cursor(dictionary=True)
+
+    # Get last template_code
     cursor.execute("""
-        INSERT INTO sms_templates (user_id, name, message)
-        VALUES (%s, %s, %s)
-    """, (session["user_id"], name, message))
+        SELECT template_code FROM sms_templates
+        WHERE user_id=%s
+        ORDER BY id DESC LIMIT 1
+    """, (session["user_id"],))
+    
+    last = cursor.fetchone()
+
+    if last and last["template_code"]:
+        next_code = str(int(last["template_code"]) + 1).zfill(4)
+    else:
+        next_code = "0001"
+
+    # Insert with new template_code
+    cursor.execute("""
+        INSERT INTO sms_templates (user_id, name, message, template_code)
+        VALUES (%s, %s, %s, %s)
+    """, (session["user_id"], name, message, next_code))
+
     db.commit()
 
     template_id = cursor.lastrowid
-    return jsonify({"id": template_id, "name": name, "message": message, "success": True})
+
+    return jsonify({
+        "id": template_id,
+        "template_code": next_code,
+        "name": name,
+        "message": message,
+        "success": True
+    })
 
 # ----------------------------
 # AJAX: Update Template

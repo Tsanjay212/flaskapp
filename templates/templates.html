@@ -208,30 +208,34 @@ th:nth-child(4), td:nth-child(4) { width: 15%; text-align:center; }
     <h3>Latest Templates</h3>
 
     {% if templates %}
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Message</th>
-                <th>Created</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="template-table">
-        {% for t in templates %}
-        <tr class="template-row" data-id="{{ t.id }}">
-            <td>{{ t.name }}</td>
-            <td><span class="message-truncate">{{ t.message }}</span></td>
-            <td>{{ t.created_at }}</td>
-            <td class="actions">
-                <button onclick="editTemplate({{ t.id }}, {{ t.name|tojson }}, {{ t.message|tojson }}); event.stopPropagation();">
-                    Edit
-                </button>
-            </td>
+   <table>
+    <thead>
+        <tr>
+            <th>Template ID</th>
+            <th>Name</th>
+            <th>Message</th>
+            <th>Created</th>
+            <th>Actions</th>
         </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    </thead>
+    <tbody id="template-table">
+    {% for t in templates %}
+    <tr class="template-row" data-id="{{ t.id }}">
+        <td><b>{{ t.template_code or '----' }}</b></td>
+        <td>{{ t.name }}</td>
+        <td>
+            <span class="message-truncate">{{ t.message }}</span>
+        </td>
+        <td>{{ t.created_at }}</td>
+        <td class="actions">
+            <button onclick="editTemplate({{ t.id }}, {{ t.name|tojson }}, {{ t.message|tojson }}); event.stopPropagation();">
+                Edit
+            </button>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
     {% else %}
     <p>No templates found</p>
     {% endif %}
