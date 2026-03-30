@@ -239,20 +239,19 @@ def reports():
     return render_template("dashboard.html", summary_data=summary_data, username=session.get("username"), show_section="report")
 
 # ----------------------------
-# Templates Page
+# Templates Route (with search & soft delete)
 # ----------------------------
 @app.route("/templates")
 @login_required
 def templates():
     search = request.args.get("search", "")
     cursor = db.cursor(dictionary=True)
-
+    
     if search:
         cursor.execute("""
             SELECT * FROM sms_templates
             WHERE user_id=%s AND deleted=0 AND name LIKE %s
             ORDER BY id DESC
-            LIMIT 10
         """, (session["user_id"], f"%{search}%"))
     else:
         cursor.execute("""
@@ -261,10 +260,8 @@ def templates():
             ORDER BY id DESC
             LIMIT 10
         """, (session["user_id"],))
-
+    
     templates = cursor.fetchall()
-    cursor.close()  # important!
-
     return render_template("templates.html", templates=templates, search=search, username=session.get("username"))
 
 # ----------------------------
@@ -277,22 +274,21 @@ def add_template():
     message = request.form.get("message")
 
     cursor = db.cursor(dictionary=True)
-    # Get last template_code
     cursor.execute("""
         SELECT template_code FROM sms_templates
         WHERE user_id=%s
         ORDER BY id DESC LIMIT 1
     """, (session["user_id"],))
     last = cursor.fetchone()
+
     next_code = str(int(last["template_code"]) + 1).zfill(4) if last and last["template_code"] else "0001"
 
     cursor.execute("""
         INSERT INTO sms_templates (user_id, name, message, template_code, deleted)
-        VALUES (%s, %s, %s, %s, 0)
+        VALUES (%s,%s,%s,%s,0)
     """, (session["user_id"], name, message, next_code))
     db.commit()
     template_id = cursor.lastrowid
-    cursor.close()
 
     return jsonify({
         "id": template_id,
@@ -310,20 +306,17 @@ def add_template():
 def update_template(id):
     name = request.form.get("name")
     message = request.form.get("message")
-
     cursor = db.cursor()
     cursor.execute("""
         UPDATE sms_templates
         SET name=%s, message=%s
-        WHERE id=%s AND user_id=%s AND deleted=0
+        WHERE id=%s AND user_id=%s
     """, (name, message, id, session["user_id"]))
     db.commit()
-    cursor.close()
-
     return jsonify({"id": id, "name": name, "message": message, "success": True})
 
 # ----------------------------
-# AJAX: Delete Template (Soft Delete)
+# AJAX: Soft Delete Template
 # ----------------------------
 @app.route("/templates/delete/<int:id>", methods=["POST"])
 @login_required
@@ -335,7 +328,6 @@ def delete_template(id):
         WHERE id=%s AND user_id=%s
     """, (id, session["user_id"]))
     db.commit()
-    cursor.close()
     return jsonify({"id": id, "status": "deleted", "success": True})
 
 # ----------------------------
