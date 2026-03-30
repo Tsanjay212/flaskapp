@@ -246,19 +246,21 @@ def reports():
 def templates():
     search = request.args.get("search", "")
     cursor = db.cursor(dictionary=True)
+
     if search:
         cursor.execute("""
             SELECT * FROM sms_templates
-            WHERE user_id=%s AND name LIKE %s
+            WHERE user_id=%s AND deleted=0 AND name LIKE %s
             ORDER BY id DESC
         """, (session["user_id"], f"%{search}%"))
     else:
         cursor.execute("""
             SELECT * FROM sms_templates
-            WHERE user_id=%s
+            WHERE user_id=%s AND deleted=0
             ORDER BY id DESC
             LIMIT 10
         """, (session["user_id"],))
+
     templates = cursor.fetchall()
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -338,7 +340,8 @@ def update_template(id):
 def delete_template(id):
     cursor = db.cursor()
     cursor.execute("""
-        DELETE FROM sms_templates
+        UPDATE sms_templates
+        SET deleted=1
         WHERE id=%s AND user_id=%s
     """, (id, session["user_id"]))
     db.commit()

@@ -135,9 +135,9 @@ th:nth-child(5), td:nth-child(5) { width: 10%; text-align:center; }
             <td><span class="message-truncate">{{ t.message }}</span></td>
             <td>{{ t.created_at }}</td>
             <td class="actions">
-                <button onclick='editTemplate({{ t.id }}, {{ t.name|tojson }}, {{ t.message|tojson }})'>Edit</button>
-                <button class="delete-btn" onclick='deleteTemplate({{ t.id }})'>Delete</button>
-            </td>
+               <button onclick='editTemplate({{ t.id }}, {{ t.name|tojson }}, {{ t.message|tojson }})'>Edit</button>
+               <button onclick='deleteTemplate({{ t.id }})' style="background:#ef4444;">Delete</button>
+<           /td>
         </tr>
         {% endfor %}
         </tbody>
@@ -228,12 +228,21 @@ function saveTemplate() {
 // Delete template
 function deleteTemplate(id){
     if(!confirm("Are you sure you want to delete this template?")) return;
+
     fetch("/templates/delete/" + id, {method:"POST"})
-    .then(res=>res.json())
-    .then(data=>{
+    .then(res => res.json())
+    .then(data => {
         if(data.success){
-            document.getElementById("row-" + id).remove();
+            // remove row from table
+            let row = document.getElementById("row-" + id);
+            if(row) row.remove();
+        } else {
+            alert("Failed to delete template");
         }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Error deleting template");
     });
 }
 </script>
