@@ -320,12 +320,13 @@ def update_template(id):
 
     cursor = db.cursor()
     cursor.execute("""
-    SELECT * FROM sms_templates
-    WHERE user_id=%s
-    ORDER BY template_code DESC
-    LIMIT 10
-""", (session["user_id"],))
+        UPDATE sms_templates
+        SET name=%s, message=%s
+        WHERE id=%s AND user_id=%s
+    """, (name, message, id, session["user_id"]))
+    
     db.commit()
+    cursor.close()
 
     return jsonify({"id": id, "name": name, "message": message, "success": True})
 
