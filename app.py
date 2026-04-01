@@ -321,13 +321,19 @@ def update_template(id):
 @app.route("/templates/delete/<int:id>", methods=["POST"])
 @login_required
 def delete_template(id):
+    print("✅ DELETE API CALLED, ID =", id)
+
     cursor = db.cursor()
     cursor.execute("""
         UPDATE sms_templates
         SET deleted=1
         WHERE id=%s AND user_id=%s
     """, (id, session["user_id"]))
+
+    print("🔍 Rows affected:", cursor.rowcount)
+
     db.commit()
+
     return jsonify({"id": id, "status": "deleted", "success": True})
 
 # ----------------------------
