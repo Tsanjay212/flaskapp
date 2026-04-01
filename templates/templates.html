@@ -132,24 +132,34 @@ function saveTemplate() {
     const name = document.getElementById("template-name").value;
     const message = document.getElementById("template-message").value;
 
+    if(!name || !message){
+        alert("Name and message are required");
+        return;
+    }
+
     let url = id ? "/templates/update/" + id : "/templates/add";
 
     fetch(url, {
         method:"POST",
         headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:`name=${encodeURIComponent(name)}&message=${encodeURIComponent(message)}`
+        body:`name=${encodeURIComponent(name)}&message=${encodeURIComponent(message)}`,
+        credentials:"same-origin"
     })
     .then(res => res.json())
     .then(data => {
         closeModal();
         let table = document.getElementById("template-table");
         if(id){
+            // Update existing row
             let row = document.getElementById("row-"+id);
-            row.children[1].innerText = name;
-            row.children[2].innerText = message;
-            row.classList.add("highlight");
-            setTimeout(()=>row.classList.remove("highlight"),2000);
-        } else {
+            if(row){
+                row.children[1].innerText = name;
+                row.children[2].innerText = message;
+                row.classList.add("highlight");
+                setTimeout(()=>row.classList.remove("highlight"),2000);
+            }
+        } else if(data.success){
+            // Insert new row at top
             let newRow = `
             <tr id="row-${data.id}" class="highlight">
                 <td><b>${data.template_code}</b></td>
@@ -162,7 +172,9 @@ function saveTemplate() {
                 </td>
             </tr>`;
             table.insertAdjacentHTML("afterbegin", newRow);
-            if(table.rows.length > 10) table.deleteRow(10); // keep only latest 10
+            if(table.rows.length > 10) table.deleteRow(10); // Keep only latest 10
+        } else if(!data.success){
+            alert("Failed to save template: " + data.error);
         }
     })
     .catch(err=>{ console.error(err); alert("Error saving template"); });
@@ -171,13 +183,18 @@ function saveTemplate() {
 function deleteTemplate(id){
     if(!confirm("Are you sure you want to delete this template?")) return;
 
-    fetch("/templates/delete/" + id, {method:"POST"})
+    fetch("/templates/delete/" + id, {
+        method:"POST",
+        credentials:"same-origin"
+    })
     .then(res => res.json())
     .then(data => {
         if(data.success){
             let row = document.getElementById("row-" + id);
             if(row) row.remove();
-        } else alert("Failed to delete template");
+        } else {
+            alert("Failed to delete template: " + data.error);
+        }
     })
     .catch(err => { console.error(err); alert("Error deleting template"); });
 }

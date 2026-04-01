@@ -239,103 +239,132 @@ def reports():
     return render_template("dashboard.html", summary_data=summary_data, username=session.get("username"), show_section="report")
 
 # ----------------------------
-# Templates Route (with search & soft delete)
+# Templates Route (list & search)
 # ----------------------------
 @app.route("/templates")
 @login_required
 def templates():
     search = request.args.get("search", "")
-    cursor = db.cursor(dictionary=True)
-    
-    if search:
-        cursor.execute("""
-            SELECT * FROM sms_templates
-            WHERE user_id=%s AND deleted=0 AND name LIKE %s
-            ORDER BY id DESC
-        """, (session["user_id"], f"%{search}%"))
-    else:
-        cursor.execute("""
-            SELECT * FROM sms_templates
-            WHERE user_id=%s AND deleted=0
-            ORDER BY id DESC
-            LIMIT 10
-        """, (session["user_id"],))
-    
-    templates = cursor.fetchall()
-    return render_template("templates.html", templates=templates, search=search, username=session.get("username"))
+    user_id = session["user_id"]
+    try:
+        cursor = db.cursor(dictionary=True)
+        if search:
+            cursor.execute("""
+                SELECT * FROM sms_templates
+                WHERE user_id=%s AND deleted=0 AND name LIKE %s
+                ORDER BY id DESC
+            """, (user_id, f"%{search}%"))
+        else:
+            cursor.execute("""
+                SELECT * FROM sms_templates
+                WHERE user_id=%s AND deleted=0
+                ORDER BY id DESC
+                LIMIT 10
+            """, (user_id,))
+        templates = cursor.fetchall()
+        cursor.close()
+        return render_template("templates.html", templates=templates, search=search, username=session.get("username"))
+    except Exception as e:
+        print("❌ ERROR in templates route:", str(e))
+        return "Internal Server Error", 500
 
 # ----------------------------
-# AJAX: Add Template
+# Add Template
 # ----------------------------
 @app.route("/templates/add", methods=["POST"])
 @login_required
 def add_template():
+    user_id = session["user_id"]
     name = request.form.get("name")
     message = request.form.get("message")
 
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT template_code FROM sms_templates
-        WHERE user_id=%s
-        ORDER BY id DESC LIMIT 1
-    """, (session["user_id"],))
-    last = cursor.fetchone()
+    try:
+        cursor = db.cursor(dictionary=True)
+        # Generate next template_code safely
+        cursor.execute("""
+            SELECT template_code FROM sms_templates
+            WHERE user_id=%s
+            ORDER BY id DESC LIMIT 1
+        """, (user_id,))
+        last = cursor.fetchone()
+        next_code = str(int(last["template_code"]) + 1).zfill(4) if last and last["template_code"] else "0001"
 
-    next_code = str(int(last["template_code"]) + 1).zfill(4) if last and last["template_code"] else "0001"
+        # Insert new template
+        cursor.execute("""
+            INSERT INTO sms_templates (user_id, name, message, template_code, deleted)
+            VALUES (%s, %s, %s, %s, 0)
+        """, (user_id, name, message, next_code))
+        db.commit()
+        template_id = cursor.lastrowid
+        cursor.close()
 
-    cursor.execute("""
-        INSERT INTO sms_templates (user_id, name, message, template_code, deleted)
-        VALUES (%s,%s,%s,%s,0)
-    """, (session["user_id"], name, message, next_code))
-    db.commit()
-    template_id = cursor.lastrowid
-
-    return jsonify({
-        "id": template_id,
-        "template_code": next_code,
-        "name": name,
-        "message": message,
-        "success": True
-    })
+        return jsonify({
+            "id": template_id,
+            "template_code": next_code,
+            "name": name,
+            "message": message,
+            "success": True
+        })
+    except Exception as e:
+        print("❌ ERROR in add_template:", str(e))
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ----------------------------
-# AJAX: Update Template
+# Update Template
 # ----------------------------
 @app.route("/templates/update/<int:id>", methods=["POST"])
 @login_required
 def update_template(id):
+    user_id = session["user_id"]
     name = request.form.get("name")
     message = request.form.get("message")
-    cursor = db.cursor()
-    cursor.execute("""
-        UPDATE sms_templates
-        SET name=%s, message=%s
-        WHERE id=%s AND user_id=%s
-    """, (name, message, id, session["user_id"]))
-    db.commit()
-    return jsonify({"id": id, "name": name, "message": message, "success": True})
+
+    try:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE sms_templates
+            SET name=%s, message=%s
+            WHERE id=%s AND user_id=%s
+        """, (name, message, id, user_id))
+        db.commit()
+        rowcount = cursor.rowcount
+        cursor.close()
+
+        if rowcount == 0:
+            return jsonify({"success": False, "error": "Template not found"}), 404
+
+        return jsonify({"id": id, "name": name, "message": message, "success": True})
+    except Exception as e:
+        print("❌ ERROR in update_template:", str(e))
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ----------------------------
-# AJAX: Soft Delete Template
+# Soft Delete Template
 # ----------------------------
 @app.route("/templates/delete/<int:id>", methods=["POST"])
 @login_required
 def delete_template(id):
-    print("✅ DELETE API CALLED, ID =", id)
+    user_id = session["user_id"]
+    try:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE sms_templates
+            SET deleted=1
+            WHERE id=%s AND user_id=%s
+        """, (id, user_id))
+        db.commit()
+        rowcount = cursor.rowcount
+        cursor.close()
 
-    cursor = db.cursor()
-    cursor.execute("""
-        UPDATE sms_templates
-        SET deleted=1
-        WHERE id=%s AND user_id=%s
-    """, (id, session["user_id"]))
+        if rowcount == 0:
+            return jsonify({"success": False, "error": "Template not found or already deleted"}), 404
 
-    print("🔍 Rows affected:", cursor.rowcount)
-
-    db.commit()
-
-    return jsonify({"id": id, "status": "deleted", "success": True})
-
+        print(f"✅ Template {id} soft-deleted by user {user_id}")
+        return jsonify({"success": True, "id": id})
+    except Exception as e:
+        print("❌ ERROR in delete_template:", str(e))
+        return jsonify({"success": False, "error": str(e)}), 500
+    
 # ----------------------------
 # Prevent Browser Cache
 # ----------------------------
