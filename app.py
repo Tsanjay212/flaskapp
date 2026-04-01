@@ -126,7 +126,13 @@ def logout():
     flash("Logged out successfully.", "success")
     return redirect(url_for("login"))
 
-
+# ----------------------------
+# Dashboard
+# ----------------------------
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    return render_template("dashboard.html", username=session.get("username"), show_section=None)
 
 # ----------------------------
 # Send SMS Route
