@@ -97,62 +97,6 @@ tr:hover { background:#f9fafb; }
         </div>
     </div>
 </div>
-<!-- TEMPLATES -->
-<div id="template-section" class="section">
-    <div class="card">
-        <h3>Create Template</h3>
-        <form method="POST" action="{{ url_for('add_template') }}">
-            <label>Template Name</label>
-            <input type="text" name="name" required>
-
-            <label>Message</label>
-            <textarea name="message" rows="3" required></textarea>
-
-            <button type="submit" class="submit-btn">Save Template</button>
-        </form>
-    </div>
-
-    <div class="card">
-        <h3>Saved Templates</h3>
-
-        {% if templates %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Message</th>
-                    <th>Created Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in templates %}
-                <tr>
-                    <form method="POST" action="{{ url_for('update_template', id=t.id) }}">
-                        <td>
-                            <input type="text" name="name" value="{{ t.name }}">
-                        </td>
-                        <td>
-                            <textarea name="message">{{ t.message }}</textarea>
-                        </td>
-                        <td>{{ t.created_at }}</td>
-                        <td>
-                            <button class="submit-btn" type="submit">Update</button>
-                            <a href="{{ url_for('delete_template', id=t.id) }}" 
-                               onclick="return confirm('Delete this template?')"
-                               style="color:red; margin-left:10px;">Delete</a>
-                        </td>
-                    </form>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No templates found.</p>
-        {% endif %}
-    </div>
-</div>
-
 <script>
 const buttons = document.querySelectorAll(".toggle-btn");
 const sections = document.querySelectorAll(".section");
