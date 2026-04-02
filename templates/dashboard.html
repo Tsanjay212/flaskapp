@@ -7,35 +7,34 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <style>
-* { box-sizing: border-box; margin:0; padding:0; font-family:"Segoe UI", Arial, sans-serif; }
-body { background:#f8f7f7fb; color:#333; }
-header { background:#02142e; color:white; padding:20px; text-align:center; font-size:22px; font-weight:600; }
-.sidebar { height:100vh; width:230px; position:fixed; top:0; left:0; background:#02142e; padding-top:80px; display:flex; flex-direction:column; }
-.sidebar button { background:none; border:none; color:white; text-align:left; padding:14px 20px; cursor:pointer; width:100%; transition:0.2s; }
-.sidebar button:hover, .sidebar button.active { background:#02060f; color:white; }
-.logout-btn { position:absolute; bottom:10px; width:180px; background:#ef4444; color:white; font-weight:600; border:none; padding:10px; border-radius:6px; cursor:pointer; }
-.logout-btn:hover { background:#dc2626; }
-.main { margin-left:220px; padding:40px; }
-.card { background:white; padding:25px; border-radius:10px; margin-bottom:25px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
-h2,h3,h4 { margin-top:0; }
-input, textarea { width:100%; padding:10px 12px; margin-bottom:15px; border-radius:6px; border:1px solid #d1d5db; font-size:14px; }
-input:focus, textarea:focus { outline:none; border-color:#2563eb; }
-.submit-btn { background:#2563eb; color:white; font-weight:600; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; }
-.submit-btn:hover { background:#1d4ed8; }
-table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; }
-thead { background:#f3f4f6; }
-th,td { padding:10px; text-align:left; border-bottom:1px solid #e5e7eb; }
-tr:hover { background:#f9fafb; }
-.section { display:none; }
-.report-filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:15px; }
-#report-range { min-width:260px; cursor:pointer; }
-.preset-btn { background:#e5e7eb; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; }
-.preset-btn:hover { background:#d1d5db; }
+*{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Arial,sans-serif;}
+body{background:#f8f7f7fb;color:#333;}
+header{background:#02142e;color:white;padding:20px;text-align:center;font-size:22px;font-weight:600;}
+.sidebar{height:100vh;width:230px;position:fixed;top:0;left:0;background:#02142e;padding-top:80px;display:flex;flex-direction:column;}
+.sidebar button{background:none;border:none;color:white;text-align:left;padding:14px 20px;cursor:pointer;width:100%;transition:0.2s;}
+.sidebar button:hover,.sidebar button.active{background:#02060f;color:white;}
+.logout-btn{position:absolute;bottom:10px;width:180px;background:#ef4444;color:white;font-weight:600;border:none;padding:10px;border-radius:6px;cursor:pointer;}
+.logout-btn:hover{background:#dc2626;}
+.main{margin-left:220px;padding:40px;}
+.card{background:white;padding:25px;border-radius:10px;margin-bottom:25px;box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+h2,h3,h4{margin-top:0;}
+input,textarea{width:100%;padding:10px 12px;margin-bottom:15px;border-radius:6px;border:1px solid #d1d5db;font-size:14px;}
+input:focus,textarea:focus{outline:none;border-color:#2563eb;}
+.submit-btn{background:#2563eb;color:white;font-weight:600;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;}
+.submit-btn:hover{background:#1d4ed8;}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
+thead{background:#f3f4f6;}
+th,td{padding:10px;text-align:left;border-bottom:1px solid #e5e7eb;}
+tr:hover{background:#f9fafb;}
+.section{display:none;}
+.report-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:15px;}
+#report-range{min-width:260px;cursor:pointer;}
+.preset-btn{background:#e5e7eb;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;}
+.preset-btn:hover{background:#d1d5db;}
 </style>
 </head>
-
 <body>
-<header>🚀 SMS Dashboard</header>
+<header>🚀 San-Sms-T-Platform SMS Dashboard</header>
 
 <div class="sidebar">
     <button class="toggle-btn" data-target="send-section">Send SMS</button>
@@ -74,7 +73,6 @@ tr:hover { background:#f9fafb; }
             <button id="report-search-btn" class="submit-btn">Search</button>
             <button id="report-export-btn" class="submit-btn" style="background:#10b981;">Export CSV</button>
         </div>
-
         <div id="report-table">
             {% if summary_data %}
             <table>
@@ -98,116 +96,55 @@ tr:hover { background:#f9fafb; }
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
-
-    // Section toggle
-    const buttons = document.querySelectorAll(".toggle-btn");
-    const sections = document.querySelectorAll(".section");
-
+    const buttons=document.querySelectorAll(".toggle-btn");
+    const sections=document.querySelectorAll(".section");
     function showSection(id){
         buttons.forEach(b=>b.classList.remove("active"));
         const btn=document.querySelector(`.toggle-btn[data-target="${id}"]`);
         if(btn) btn.classList.add("active");
         sections.forEach(sec=>sec.style.display="none");
-
-        const el = document.getElementById(id);
+        const el=document.getElementById(id);
         if(el) el.style.display="block";
     }
-
-    {% if show_section %}
-    showSection("{{ show_section }}");
-    {% else %}
-    showSection("send-section");
-    {% endif %}
-
-    buttons.forEach(btn=>{
-        btn.addEventListener("click",()=>showSection(btn.dataset.target));
-    });
+    {% if show_section %} showSection("{{ show_section }}"); {% else %} showSection("send-section"); {% endif %}
+    buttons.forEach(btn=>btn.addEventListener("click",()=>showSection(btn.dataset.target)));
 
     // SMS AJAX
-    const smsForm = document.getElementById("sms-form");
-    if(smsForm){
-        smsForm.addEventListener("submit", function(e){
-            e.preventDefault();
-            const formData=new FormData(this);
-
-            fetch("{{ url_for('send_sms') }}", {
-                method:"POST",
-                headers: {"X-Requested-With":"XMLHttpRequest"},
-                body:formData
-            })
-            .then(res=>res.json())
-            .then(res=>{
-                const resp=document.getElementById("sms-response");
-                resp.innerHTML=res.message;
-                resp.style.color=res.status==="Sent"?"green":"red";
-                if(res.status==="Sent") this.reset();
-            });
+    const smsForm=document.getElementById("sms-form");
+    if(smsForm){smsForm.addEventListener("submit",function(e){
+        e.preventDefault();
+        const formData=new FormData(this);
+        fetch("{{ url_for('send_sms') }}",{method:"POST",headers:{"X-Requested-With":"XMLHttpRequest"},body:formData})
+        .then(res=>res.json()).then(res=>{
+            const resp=document.getElementById("sms-response");
+            resp.innerHTML=res.message;
+            resp.style.color=res.status==="Sent"?"green":"red";
+            if(res.status==="Sent") this.reset();
         });
-    }
+    });}
 
     // Reports
     let selectedStart=null, selectedEnd=null;
+    const picker=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d",onClose:function(sd){if(sd.length===2){selectedStart=picker.formatDate(sd[0],"Y-m-d"); selectedEnd=picker.formatDate(sd[1],"Y-m-d");}}});
+    function setRange(start,end){picker.setDate([start,end],true); selectedStart=start; selectedEnd=end;}
+    document.getElementById("today-btn").onclick=()=>{const today=new Date().toISOString().split('T')[0]; setRange(today,today);};
+    document.getElementById("last7-btn").onclick=()=>{const today=new Date(); const past=new Date(); past.setDate(today.getDate()-6); setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
+    document.getElementById("month-btn").onclick=()=>{const today=new Date(); const first=new Date(today.getFullYear(),today.getMonth(),1); setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
 
-    const picker=flatpickr("#report-range",{
-        mode:"range",
-        dateFormat:"Y-m-d",
-        onClose: function(sd){
-            if(sd.length===2){
-                selectedStart=picker.formatDate(sd[0],"Y-m-d");
-                selectedEnd=picker.formatDate(sd[1],"Y-m-d");
-            }
-        }
-    });
-
-    function setRange(start,end){
-        picker.setDate([start,end],true);
-        selectedStart=start;
-        selectedEnd=end;
-    }
-
-    document.getElementById("today-btn").onclick=()=>{
-        const today=new Date().toISOString().split('T')[0];
-        setRange(today,today);
-    };
-
-    document.getElementById("last7-btn").onclick=()=>{
-        const today=new Date();
-        const past=new Date();
-        past.setDate(today.getDate()-6);
-        setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);
-    };
-
-    document.getElementById("month-btn").onclick=()=>{
-        const today=new Date();
-        const first=new Date(today.getFullYear(),today.getMonth(),1);
-        setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);
-    };
-
-    // Search (fixed)
     document.getElementById("report-search-btn").onclick=()=>{
-        if(!selectedStart || !selectedEnd){
-            alert("Select a date range");
-            return;
-        }
-        window.location = `/reports?start=${selectedStart}&end=${selectedEnd}`;
+        if(!selectedStart||!selectedEnd){alert("Select a date range"); return;}
+        fetch(`/reports?start=${selectedStart}&end=${selectedEnd}`,{headers:{"X-Requested-With":"XMLHttpRequest"}})
+        .then(res=>res.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
     };
-
-    // Export
     document.getElementById("report-export-btn").onclick=()=>{
-        if(!selectedStart || !selectedEnd){
-            alert("Select a date range");
-            return;
-        }
+        if(!selectedStart||!selectedEnd){alert("Select a date range"); return;}
         window.location = `/reports?start=${selectedStart}&end=${selectedEnd}&export=1`;
     };
 
-    // Restore date
     {% if request.args.get("start") and request.args.get("end") %}
-    setRange("{{ request.args.get('start') }}", "{{ request.args.get('end') }}");
+    setRange("{{ request.args.get('start') }}","{{ request.args.get('end') }}");
     {% endif %}
-
 });
 </script>
-
 </body>
 </html>

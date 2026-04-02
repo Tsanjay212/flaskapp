@@ -1,20 +1,20 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash, Response
+from flask import Flask, render_template, request, redirect, session, url_for, flash, Response, jsonify
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
 from io import StringIO
 import csv
-import os, requests, json, socket
+import os, requests, socket
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 
-# Fix for ALB
+# Fix for ALB stickiness
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # ----------------------------
-# DB Connection (FIXED)
+# DB Connection
 # ----------------------------
 DB_HOST = os.environ.get("MYSQL_HOST", "flask-mariadb-db.cnwcmsquw4d7.ap-south-2.rds.amazonaws.com")
 DB_USER = os.environ.get("MYSQL_USER", "flaskdb")
@@ -28,17 +28,6 @@ def get_db():
         password=DB_PASSWORD,
         database=DB_NAME
     )
-
-# ----------------------------
-# Health
-# ----------------------------
-@app.route('/health')
-def health():
-    return "OK", 200
-
-@app.route("/server")
-def server():
-    return f"Served from: {socket.gethostname()}"
 
 # ----------------------------
 # Auth
@@ -114,10 +103,10 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", username=session.get("username"), show_section=None)
+    return render_template("dashboard.html", username=session.get("username"), show_section="send-section")
 
 # ----------------------------
-# Send SMS
+# Send SMS (AJAX)
 # ----------------------------
 @app.route("/send_sms", methods=["POST"])
 @login_required
@@ -136,7 +125,6 @@ def send_sms():
     }
 
     status = "Failed"
-
     try:
         r = requests.post(api_url, json=payload)
         if r.status_code == 200:
@@ -154,11 +142,14 @@ def send_sms():
     cursor.close()
     conn.close()
 
-    flash("SMS Sent!" if status == "Sent" else "SMS Failed", "success")
-    return redirect(url_for("dashboard"))
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"status": status, "message": f"SMS {status} to {number}"})
+    else:
+        flash("SMS Sent!" if status == "Sent" else "SMS Failed", "success")
+        return redirect(url_for("dashboard"))
 
 # ----------------------------
-# Reports (FIXED)
+# Reports (AJAX + Export CSV)
 # ----------------------------
 @app.route("/reports")
 @login_required
@@ -185,22 +176,42 @@ def reports():
 
     cursor.execute(query, tuple(params))
     data = cursor.fetchall()
-
     cursor.close()
     conn.close()
 
+    # Export CSV
     if export == "1":
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(["Date", "Recipient", "Count"])
+        writer.writerow(["Date", "Recipient", "SMS Count"])
         for row in data:
             writer.writerow([row["day"], row["dest"], row["sms_count"]])
-        return Response(output.getvalue(), mimetype="text/csv")
+        return Response(output.getvalue(), mimetype="text/csv",
+                        headers={"Content-Disposition": "attachment; filename=sms_summary.csv"})
 
-    return render_template("dashboard.html",
-                           summary_data=data,
-                           username=session.get("username"),
-                           show_section="report")
+    # AJAX request
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        table_html = "<table><thead><tr><th>Date</th><th>Recipient</th><th>SMS Count</th></tr></thead><tbody>"
+        if data:
+            for row in data:
+                table_html += f"<tr><td>{row['day']}</td><td>{row['dest']}</td><td>{row['sms_count']}</td></tr>"
+        else:
+            table_html += "<tr><td colspan='3'>No SMS records found.</td></tr>"
+        table_html += "</tbody></table>"
+        return table_html
+
+    return render_template("dashboard.html", summary_data=data, username=session.get("username"), show_section="report")
+
+# ----------------------------
+# Health & Server
+# ----------------------------
+@app.route("/health")
+def health():
+    return "OK", 200
+
+@app.route("/server")
+def server():
+    return f"Served from: {socket.gethostname()}"
 
 # ----------------------------
 # No Cache
