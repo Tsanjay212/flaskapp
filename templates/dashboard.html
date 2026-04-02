@@ -26,8 +26,6 @@ table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; }
 thead { background:#f3f4f6; }
 th,td { padding:10px; text-align:left; border-bottom:1px solid #e5e7eb; }
 tr:hover { background:#f9fafb; }
-.status-sent { color:#16a34a; font-weight:600; }
-.status-failed { color:#dc2626; font-weight:600; }
 .section { display:none; }
 .report-filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:15px; }
 #report-range { min-width:260px; cursor:pointer; }
@@ -76,6 +74,7 @@ tr:hover { background:#f9fafb; }
             <button id="report-search-btn" class="submit-btn">Search</button>
             <button id="report-export-btn" class="submit-btn" style="background:#10b981;">Export CSV</button>
         </div>
+
         <div id="report-table">
             {% if summary_data %}
             <table>
@@ -96,9 +95,12 @@ tr:hover { background:#f9fafb; }
         </div>
     </div>
 </div>
+
 <script>
+// Section toggle
 const buttons = document.querySelectorAll(".toggle-btn");
 const sections = document.querySelectorAll(".section");
+
 function showSection(id){
     buttons.forEach(b=>b.classList.remove("active"));
     const btn=document.querySelector(`.toggle-btn[data-target="${id}"]`);
@@ -106,18 +108,28 @@ function showSection(id){
     sections.forEach(sec=>sec.style.display="none");
     document.getElementById(id).style.display="block";
 }
-{% if show_section %}showSection("{{ show_section }}");{% else %}showSection("send-section");{% endif %}
+
+{% if show_section %}
+showSection("{{ show_section }}");
+{% else %}
+showSection("send-section");
+{% endif %}
+
 buttons.forEach(btn=>btn.addEventListener("click",()=>showSection(btn.dataset.target)));
 
-// AJAX Send SMS
+
+// ✅ AJAX Send SMS (unchanged)
 document.getElementById("sms-form").addEventListener("submit", function(e){
     e.preventDefault();
     const formData=new FormData(this);
+
     fetch("{{ url_for('send_sms') }}", {
         method:"POST",
         headers: {"X-Requested-With":"XMLHttpRequest"},
         body:formData
-    }).then(res=>res.json()).then(res=>{
+    })
+    .then(res=>res.json())
+    .then(res=>{
         const resp=document.getElementById("sms-response");
         resp.innerHTML=res.message;
         resp.style.color=res.status==="Sent"?"green":"red";
@@ -125,22 +137,72 @@ document.getElementById("sms-form").addEventListener("submit", function(e){
     });
 });
 
-// Reports
-let selectedStart=null, selectedEnd=null;
-const picker=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d",onClose: function(sd){
-    if(sd.length===2){selectedStart=picker.formatDate(sd[0],"Y-m-d"); selectedEnd=picker.formatDate(sd[1],"Y-m-d");}
-}});
-function setRange(start,end){picker.setDate([start,end],true); selectedStart=start; selectedEnd=end;}
-document.getElementById("today-btn").onclick=()=>{const today=new Date().toISOString().split('T')[0]; setRange(today,today);};
-document.getElementById("last7-btn").onclick=()=>{const today=new Date(); const past=new Date(); past.setDate(today.getDate()-6); setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
-document.getElementById("month-btn").onclick=()=>{const today=new Date(); const first=new Date(today.getFullYear(),today.getMonth(),1); setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
 
-function fetchReports(startDate,endDate){
-    fetch("{{ url_for('reports') }}?start="+startDate+"&end="+endDate,{headers:{"X-Requested-With":"XMLHttpRequest"}})
-    .then(res=>res.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
+// ✅ Reports (FIXED)
+let selectedStart=null, selectedEnd=null;
+
+const picker=flatpickr("#report-range",{
+    mode:"range",
+    dateFormat:"Y-m-d",
+    onClose: function(sd){
+        if(sd.length===2){
+            selectedStart=picker.formatDate(sd[0],"Y-m-d");
+            selectedEnd=picker.formatDate(sd[1],"Y-m-d");
+        }
+    }
+});
+
+function setRange(start,end){
+    picker.setDate([start,end],true);
+    selectedStart=start;
+    selectedEnd=end;
 }
-document.getElementById("report-search-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} fetchReports(selectedStart,selectedEnd);}
-document.getElementById("report-export-btn").onclick=()=>{if(!selectedStart||!selectedEnd){alert("Select a date range"); return;} window.location="{{ url_for('reports') }}?start="+selectedStart+"&end="+selectedEnd+"&export=1";};
+
+// Presets
+document.getElementById("today-btn").onclick=()=>{
+    const today=new Date().toISOString().split('T')[0];
+    setRange(today,today);
+};
+
+document.getElementById("last7-btn").onclick=()=>{
+    const today=new Date();
+    const past=new Date();
+    past.setDate(today.getDate()-6);
+    setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);
+};
+
+document.getElementById("month-btn").onclick=()=>{
+    const today=new Date();
+    const first=new Date(today.getFullYear(),today.getMonth(),1);
+    setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);
+};
+
+// ✅ FIXED SEARCH (NO AJAX)
+document.getElementById("report-search-btn").onclick=()=>{
+    if(!selectedStart || !selectedEnd){
+        alert("Select a date range");
+        return;
+    }
+
+    window.location = `/reports?start=${selectedStart}&end=${selectedEnd}`;
+};
+
+// Export CSV
+document.getElementById("report-export-btn").onclick=()=>{
+    if(!selectedStart || !selectedEnd){
+        alert("Select a date range");
+        return;
+    }
+
+    window.location = `/reports?start=${selectedStart}&end=${selectedEnd}&export=1`;
+};
+
+
+// ✅ Restore date after refresh
+{% if request.args.get("start") and request.args.get("end") %}
+setRange("{{ request.args.get('start') }}", "{{ request.args.get('end') }}");
+{% endif %}
+
 </script>
 </body>
 </html>
