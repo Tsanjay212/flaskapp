@@ -15,25 +15,14 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# ----------------------------
-# DB Connection
-# ----------------------------
 DB_HOST = os.environ.get("MYSQL_HOST", "flask-mariadb-db.cnwcmsquw4d7.ap-south-2.rds.amazonaws.com")
 DB_USER = os.environ.get("MYSQL_USER", "flaskdb")
 DB_PASSWORD = os.environ.get("MYSQL_PASSWORD", "Tsanjay212")
 DB_NAME = os.environ.get("MYSQL_DB", "sanreach")
 
 def get_db():
-    return mysql.connector.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME
-    )
+    return mysql.connector.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD, database=DB_NAME)
 
-# ----------------------------
-# Auth
-# ----------------------------
 def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -51,21 +40,17 @@ def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
         user = cursor.fetchone()
         cursor.close()
         conn.close()
-
         if user and check_password_hash(user["password"], password):
             session["user_id"] = user["id"]
             session["username"] = user["username"]
             return redirect(url_for("dashboard"))
-
         flash("Invalid credentials", "danger")
-
     return render_template("auth.html")
 
 @app.route("/register", methods=["GET", "POST"])
@@ -74,14 +59,10 @@ def register():
         username = request.form.get("username")
         email = request.form.get("email")
         password = generate_password_hash(request.form.get("password"))
-
         conn = get_db()
         cursor = conn.cursor()
         try:
-            cursor.execute(
-                "INSERT INTO users (username,email,password) VALUES (%s,%s,%s)",
-                (username, email, password)
-            )
+            cursor.execute("INSERT INTO users (username,email,password) VALUES (%s,%s,%s)", (username, email, password))
             conn.commit()
             flash("Account created. Please login.", "success")
             return redirect(url_for("login"))
@@ -89,7 +70,6 @@ def register():
             flash("User already exists", "danger")
         cursor.close()
         conn.close()
-
     return render_template("auth.html")
 
 @app.route("/logout")
@@ -97,9 +77,6 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-# ----------------------------
-# Dashboard
-# ----------------------------
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -109,7 +86,6 @@ def dashboard():
     last_templates = cursor.fetchall()
     cursor.close()
     conn.close()
-
     return render_template(
         "dashboard.html",
         username=session.get("username"),
@@ -119,88 +95,56 @@ def dashboard():
         per_page=5
     )
 
-# ----------------------------
-# Send SMS
-# ----------------------------
 @app.route("/send_sms", methods=["POST"])
 @login_required
 def send_sms():
     number = request.form.get("number")
     message_text = request.form.get("message")
-
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
     api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="
-
-    payload = {
-        "ver": "1.0",
-        "key": api_key,
-        "encrypt": "0",
-        "messages": [{"dest": [number], "text": message_text, "send": "KARIXM"}]
-    }
-
+    payload = {"ver":"1.0","key":api_key,"encrypt":"0","messages":[{"dest":[number],"text":message_text,"send":"KARIXM"}]}
     status = "Failed"
     try:
         r = requests.post(api_url, json=payload)
-        if r.status_code == 200:
-            status = "Sent"
+        if r.status_code == 200: status = "Sent"
     except Exception as e:
         status = str(e)
-
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO sms_logs (user_id, dest, message, status) VALUES (%s,%s,%s,%s)",
-        (session["user_id"], number, message_text, status)
-    )
+    cursor.execute("INSERT INTO sms_logs (user_id, dest, message, status) VALUES (%s,%s,%s,%s)", (session["user_id"], number, message_text, status))
     conn.commit()
     cursor.close()
     conn.close()
-
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": status, "message": f"SMS {status} to {number}"})
-    else:
-        flash("SMS Sent!" if status == "Sent" else "SMS Failed", "success")
-        return redirect(url_for("dashboard"))
+    flash("SMS Sent!" if status=="Sent" else "SMS Failed", "success")
+    return redirect(url_for("dashboard"))
 
-# ----------------------------
-# Reports
-# ----------------------------
 @app.route("/reports")
 @login_required
 def reports():
     start = request.args.get("start")
     end = request.args.get("end")
     export = request.args.get("export")
-
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-
-    query = """
-        SELECT DATE(sent_at) as day, dest, COUNT(*) as sms_count
-        FROM sms_logs
-        WHERE user_id=%s
-    """
+    query = "SELECT DATE(sent_at) as day, dest, COUNT(*) as sms_count FROM sms_logs WHERE user_id=%s"
     params = [session["user_id"]]
-
     if start and end:
         query += " AND DATE(sent_at) BETWEEN %s AND %s"
         params.extend([start, end])
-
     query += " GROUP BY day, dest ORDER BY day DESC"
     cursor.execute(query, tuple(params))
     data = cursor.fetchall()
     cursor.close()
     conn.close()
-
-    if export == "1":
+    if export=="1":
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(["Date", "Recipient", "SMS Count"])
+        writer.writerow(["Date","Recipient","SMS Count"])
         for row in data:
             writer.writerow([row["day"], row["dest"], row["sms_count"]])
-        return Response(output.getvalue(), mimetype="text/csv",
-                        headers={"Content-Disposition": "attachment; filename=sms_summary.csv"})
-
+        return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition":"attachment; filename=sms_summary.csv"})
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         table_html = "<table><thead><tr><th>Date</th><th>Recipient</th><th>SMS Count</th></tr></thead><tbody>"
         if data:
@@ -210,39 +154,28 @@ def reports():
             table_html += "<tr><td colspan='3'>No SMS records found.</td></tr>"
         table_html += "</tbody></table>"
         return table_html
+    return render_template("dashboard.html", summary_data=data, username=session.get("username"), show_section="report", total=len(data), per_page=5, templates=[])
 
-    return render_template("dashboard.html", summary_data=data, username=session.get("username"), show_section="report")
-
-# ----------------------------
-# Templates
-# ----------------------------
 @app.route("/templates")
 @login_required
 def templates():
-    search = request.args.get("search", "")
-    page = int(request.args.get("page", 1))
+    search = request.args.get("search","")
+    page = int(request.args.get("page",1))
     per_page = 5
-    offset = (page - 1) * per_page
-
+    offset = (page-1)*per_page
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-
     base_query = "FROM templates WHERE 1=1"
     params = []
-
     if search:
         base_query += " AND (name LIKE %s OR dlt_template_id LIKE %s)"
         params.extend([f"%{search}%", f"%{search}%"])
-
-    cursor.execute("SELECT COUNT(*) as total " + base_query, tuple(params))
+    cursor.execute("SELECT COUNT(*) as total "+base_query, tuple(params))
     total = cursor.fetchone()["total"]
-
-    cursor.execute("SELECT * " + base_query + " ORDER BY id DESC LIMIT %s OFFSET %s", tuple(params + [per_page, offset]))
+    cursor.execute("SELECT * "+base_query+" ORDER BY id DESC LIMIT %s OFFSET %s", tuple(params+[per_page, offset]))
     data = cursor.fetchall()
-
     cursor.close()
     conn.close()
-
     return render_template("dashboard.html", templates=data, total=total, page=page, per_page=per_page, search=search, username=session.get("username"), show_section="template-section")
 
 @app.route("/templates/create", methods=["POST"])
@@ -250,21 +183,16 @@ def templates():
 def create_template():
     name = request.form.get("name")
     content = request.form.get("content")
-
     conn = get_db()
     cursor = conn.cursor()
-
     while True:
         dlt_id = generate_dlt_id()
         cursor.execute("SELECT id FROM templates WHERE dlt_template_id=%s", (dlt_id,))
-        if not cursor.fetchone():
-            break
-
+        if not cursor.fetchone(): break
     cursor.execute("INSERT INTO templates (name, content, dlt_template_id) VALUES (%s,%s,%s)", (name, content, dlt_id))
     conn.commit()
     cursor.close()
     conn.close()
-
     return redirect(url_for("templates"))
 
 @app.route("/templates/update/<int:id>", methods=["POST"])
@@ -272,16 +200,14 @@ def create_template():
 def update_template(id):
     name = request.form.get("name")
     content = request.form.get("content")
-
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE templates SET name=%s, content=%s WHERE id=%s", (name, content, id))
     conn.commit()
     cursor.close()
     conn.close()
-
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "success", "message": "Template updated", "id": id, "name": name, "content": content})
+    if request.headers.get("X-Requested-With")=="XMLHttpRequest":
+        return jsonify({"status":"success","message":"Template updated","id":id,"name":name,"content":content})
     return redirect(url_for("templates"))
 
 @app.route("/templates/delete/<int:id>", methods=["POST"])
@@ -293,29 +219,19 @@ def delete_template(id):
     conn.commit()
     cursor.close()
     conn.close()
-
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "success", "message": "Template deleted", "id": id})
+    if request.headers.get("X-Requested-With")=="XMLHttpRequest":
+        return jsonify({"status":"success","message":"Template deleted","id":id})
     return redirect(url_for("templates"))
 
-# ----------------------------
-# Health & Server
-# ----------------------------
 @app.route("/health")
-def health():
-    return "OK", 200
-
+def health(): return "OK",200
 @app.route("/server")
-def server():
-    return f"Served from: {socket.gethostname()}"
+def server(): return f"Served from: {socket.gethostname()}"
 
-# ----------------------------
-# No Cache
-# ----------------------------
 @app.after_request
 def no_cache(res):
-    res.headers["Cache-Control"] = "no-store"
+    res.headers["Cache-Control"]="no-store"
     return res
 
-if __name__ == "__main__":
+if __name__=="__main__":
     app.run(host="0.0.0.0", port=8000)
