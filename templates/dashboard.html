@@ -186,16 +186,19 @@ btns.forEach(b=>b.addEventListener("click",()=>{
 }));
 document.getElementById("{{ show_section }}").style.display="block";
 
-// Template Search
+// Template Search (by DLT ID or Name)
 function filterTemplates(){
-    const input=document.getElementById("template-search").value.toLowerCase();
-    const table=document.getElementById("template-table");
-    const trs=table.getElementsByTagName("tr");
-    for(let i=1;i<trs.length;i++){
-        const tds=trs[i].getElementsByTagName("td");
-        if(!tds[0]) continue;
-        const match=tds[0].innerText.toLowerCase().includes(input)||tds[1].innerText.toLowerCase().includes(input);
-        trs[i].style.display=match?"":"none";
+    const input = document.getElementById("template-search").value.toLowerCase();
+    const table = document.getElementById("template-table");
+    const trs = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < trs.length; i++) { // skip header row
+        const tds = trs[i].getElementsByTagName("td");
+        if (!tds[0]) continue;
+        const name = tds[1].innerText.toLowerCase();            // Template Name
+        const dltId = tds[2].innerText.toLowerCase();           // DLT ID
+        const match = name.includes(input) || dltId.includes(input);
+        trs[i].style.display = match ? "" : "none";
     }
 }
 
