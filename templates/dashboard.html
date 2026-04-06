@@ -39,6 +39,7 @@ tr:hover{background:#f9fafb;}
 <div class="sidebar">
     <button class="toggle-btn" data-target="send-section">Send SMS</button>
     <button class="toggle-btn" data-target="report-section">Reports</button>
+    <button class="toggle-btn" data-target="template-section">Templates</button>
     <form method="GET" action="{{ url_for('logout') }}">
         <button class="logout-btn" type="submit">Logout</button>
     </form>
@@ -91,6 +92,53 @@ tr:hover{background:#f9fafb;}
             <p>No SMS records found.</p>
             {% endif %}
         </div>
+    </div>
+</div>
+<!-- TEMPLATES -->
+<div id="template-section" class="section">
+    <div class="card">
+        <h3>Templates Manager</h3>
+
+        <!-- CREATE -->
+        <form method="POST" action="/templates/create">
+            <label>Template Name</label>
+            <input type="text" name="name" placeholder="Enter template name" required>
+
+            <label>Content</label>
+            <textarea name="content" rows="4" placeholder="Enter template content" required></textarea>
+
+            <button type="submit" class="submit-btn">Create Template</button>
+        </form>
+
+        <hr style="margin:20px 0;">
+
+        <!-- LIST -->
+        <h4>Existing Templates</h4>
+
+        {% if templates %}
+            {% for t in templates %}
+            <div class="card" style="background:#f9fafb;">
+                <form method="POST" action="/templates/update/{{ t.id }}">
+                    
+                    <label>Name</label>
+                    <input type="text" name="name" value="{{ t.name }}">
+
+                    <label>Content</label>
+                    <textarea name="content" rows="3">{{ t.content }}</textarea>
+
+                    <button type="submit" class="submit-btn">Update</button>
+                    <a href="/templates/delete/{{ t.id }}">
+                        <button type="button" style="background:#ef4444;color:white;margin-left:10px;padding:10px;border:none;border-radius:6px;">
+                            Delete
+                        </button>
+                    </a>
+                </form>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No templates found.</p>
+        {% endif %}
+
     </div>
 </div>
 

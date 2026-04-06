@@ -203,6 +203,85 @@ def reports():
     return render_template("dashboard.html", summary_data=data, username=session.get("username"), show_section="report")
 
 # ----------------------------
+# Templates CRUD
+# ----------------------------
+@app.route("/templates")
+@login_required
+def templates():
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM templates ORDER BY id DESC")
+    data = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "dashboard.html",
+        templates=data,
+        username=session.get("username"),
+        show_section="template-section"
+    )
+
+
+@app.route("/templates/create", methods=["POST"])
+@login_required
+def create_template():
+    name = request.form.get("name")
+    content = request.form.get("content")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO templates (name, content) VALUES (%s,%s)",
+        (name, content)
+    )
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return redirect(url_for("templates"))
+
+
+@app.route("/templates/update/<int:id>", methods=["POST"])
+@login_required
+def update_template(id):
+    name = request.form.get("name")
+    content = request.form.get("content")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE templates SET name=%s, content=%s WHERE id=%s",
+        (name, content, id)
+    )
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return redirect(url_for("templates"))
+
+
+@app.route("/templates/delete/<int:id>")
+@login_required
+def delete_template(id):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM templates WHERE id=%s", (id,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return redirect(url_for("templates"))
+
+# ----------------------------
 # Health & Server
 # ----------------------------
 @app.route("/health")
