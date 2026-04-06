@@ -7,6 +7,12 @@ from io import StringIO
 import csv
 import os, requests, socket
 
+import random
+import string
+
+def generate_dlt_id():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 
@@ -208,10 +214,30 @@ def reports():
 @app.route("/templates")
 @login_required
 def templates():
+    search = request.args.get("search", "")
+    page = int(request.args.get("page", 1))
+    per_page = 5
+    offset = (page - 1) * per_page
+
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM templates ORDER BY id DESC")
+    base_query = "FROM templates WHERE 1=1"
+    params = []
+
+    if search:
+        base_query += " AND (name LIKE %s OR dlt_template_id LIKE %s)"
+        params.extend([f"%{search}%", f"%{search}%"])
+
+    # total count
+    cursor.execute("SELECT COUNT(*) as total " + base_query, tuple(params))
+    total = cursor.fetchone()["total"]
+
+    # paginated data
+    cursor.execute(
+        "SELECT * " + base_query + " ORDER BY id DESC LIMIT %s OFFSET %s",
+        tuple(params + [per_page, offset])
+    )
     data = cursor.fetchall()
 
     cursor.close()
@@ -220,9 +246,14 @@ def templates():
     return render_template(
         "dashboard.html",
         templates=data,
+        total=total,
+        page=page,
+        per_page=per_page,
+        search=search,
         username=session.get("username"),
         show_section="template-section"
     )
+
 
 
 @app.route("/templates/create", methods=["POST"])
@@ -234,9 +265,16 @@ def create_template():
     conn = get_db()
     cursor = conn.cursor()
 
+    # generate unique ID
+    while True:
+        dlt_id = generate_dlt_id()
+        cursor.execute("SELECT id FROM templates WHERE dlt_template_id=%s", (dlt_id,))
+        if not cursor.fetchone():
+            break
+
     cursor.execute(
-        "INSERT INTO templates (name, content) VALUES (%s,%s)",
-        (name, content)
+        "INSERT INTO templates (name, content, dlt_template_id) VALUES (%s,%s,%s)",
+        (name, content, dlt_id)
     )
     conn.commit()
 
