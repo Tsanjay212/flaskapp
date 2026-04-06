@@ -103,7 +103,21 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", username=session.get("username"), show_section="send-section")
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM templates ORDER BY id DESC LIMIT 5")
+    last_templates = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "dashboard.html",
+        username=session.get("username"),
+        show_section="send-section",
+        templates=last_templates,
+        total=len(last_templates),
+        per_page=5
+    )
 
 # ----------------------------
 # Send SMS
