@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>San-Sms-Platform Dashboard</title>
+<title>San-SMS Platform Dashboard</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
@@ -47,9 +47,6 @@ tr:hover{background:#f9fafb;}
     <button class="toggle-btn" data-target="send-section">Send SMS</button>
     <button class="toggle-btn" data-target="report-section">Reports</button>
     <button class="toggle-btn" data-target="template-section">Templates</button>
-    <form method="GET" action="{{ url_for('logout') }}">
-        <button class="logout-btn" type="submit">Logout</button>
-    </form>
 </div>
 
 <div class="main">
@@ -107,10 +104,15 @@ tr:hover{background:#f9fafb;}
     <div class="card">
         <h3>Templates Manager</h3>
 
-        <!-- CREATE -->
-        <form method="POST" action="/templates/create">
+        <!-- USER INFO & LOGOUT -->
+        <p>Logged in as: <strong>{{ username }}</strong></p>
+        <form method="GET" action="{{ url_for('logout') }}">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+
+        <!-- CREATE TEMPLATE -->
+        <form method="POST" id="create-template-form" action="{{ url_for('create_template') }}">
             <input type="text" name="name" placeholder="Template Name" required>
-            <input type="text" name="dlt_template_id" placeholder="DLT Template ID" required>
             <textarea name="content" placeholder="Template Content" required></textarea>
             <button type="submit" class="submit-btn">Create Template</button>
         </form>
@@ -133,137 +135,120 @@ tr:hover{background:#f9fafb;}
             </thead>
             <tbody>
                 {% for t in templates %}
-                <tr>
+                <tr id="template-row-{{ t.id }}">
                     <td>{{ t.id }}</td>
-                    <td>{{ t.name }}</td>
+                    <td class="tpl-name">{{ t.name }}</td>
                     <td>{{ t.dlt_template_id }}</td>
-                    <td>{{ t.content }}</td>
+                    <td class="tpl-content">{{ t.content }}</td>
                     <td>
-                        <button class="submit-btn" onclick="confirmUpdate('{{ t.id }}')">Update</button>
-                        <button class="cancel-btn" onclick="confirmDelete('{{ t.id }}')">Delete</button>
+                        <button class="submit-btn" onclick="editTemplate({{ t.id }})">Update</button>
+                        <button class="cancel-btn" onclick="deleteTemplate({{ t.id }})">Delete</button>
                     </td>
                 </tr>
                 {% endfor %}
+                {% if templates|length == 0 %}
+                <tr><td colspan="5">No templates found.</td></tr>
+                {% endif %}
             </tbody>
         </table>
+
+        <!-- PAGINATION -->
+        {% if total > per_page %}
+        <div style="margin-top:10px;">
+            {% for p in range(1, (total // per_page) + 2) %}
+                <a href="{{ url_for('templates', page=p) }}" class="preset-btn {% if p==page %}active-page{% endif %}">{{ p }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 </div>
 
+</div>
+
 <!-- MODAL -->
-<div class="modal" id="modal">
-    <div class="modal-content" id="modal-content">
-        <p id="modal-text"></p>
-        <form id="modal-form" method="POST">
-            <button type="submit" class="submit-btn" id="modal-yes">Yes</button>
-            <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
-        </form>
+<div class="modal" id="edit-modal">
+    <div class="modal-content">
+        <h4>Edit Template</h4>
+        <input type="text" id="edit-name" placeholder="Template Name">
+        <textarea id="edit-content" rows="4" placeholder="Template Content"></textarea>
+        <button class="submit-btn" id="save-template-btn">Save</button>
+        <button class="cancel-btn" onclick="closeModal()">Cancel</button>
     </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function(){
-    const buttons=document.querySelectorAll(".toggle-btn");
-    const sections=document.querySelectorAll(".section");
+// ------------------ Sidebar
+const sections=document.querySelectorAll(".section");
+const btns=document.querySelectorAll(".toggle-btn");
+btns.forEach(b=>b.addEventListener("click",()=>{sections.forEach(s=>s.style.display="none");document.getElementById(b.dataset.target).style.display="block";btns.forEach(x=>x.classList.remove("active"));b.classList.add("active");}));
+document.getElementById("{{ show_section }}").style.display="block";
 
-    function showSection(id){
-        buttons.forEach(b=>b.classList.remove("active"));
-        const btn=document.querySelector(`.toggle-btn[data-target="${id}"]`);
-        if(btn) btn.classList.add("active");
-        sections.forEach(sec=>sec.style.display="none");
-        const el=document.getElementById(id);
-        if(el) el.style.display="block";
-    }
-
-    {% if show_section %}
-        showSection("{{ show_section }}");
-    {% else %}
-        showSection("send-section");
-    {% endif %}
-
-    buttons.forEach(btn=>btn.addEventListener("click",()=>showSection(btn.dataset.target)));
-
-    // SMS AJAX
-    const smsForm=document.getElementById("sms-form");
-    if(smsForm){
-        smsForm.addEventListener("submit",function(e){
-            e.preventDefault();
-            const formData=new FormData(this);
-            fetch("{{ url_for('send_sms') }}",{method:"POST",headers:{"X-Requested-With":"XMLHttpRequest"},body:formData})
-            .then(res=>res.json()).then(res=>{
-                const resp=document.getElementById("sms-response");
-                resp.innerHTML=res.message;
-                resp.style.color=res.status==="Sent"?"green":"red";
-                if(res.status==="Sent") this.reset();
-            });
-        });
-    }
-
-    // Reports
-    let selectedStart=null, selectedEnd=null;
-    const picker=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d",onClose:function(sd){
-        if(sd.length===2){
-            selectedStart=picker.formatDate(sd[0],"Y-m-d");
-            selectedEnd=picker.formatDate(sd[1],"Y-m-d");
-        }
-    }});
-
-    function setRange(start,end){
-        picker.setDate([start,end],true);
-        selectedStart=start;
-        selectedEnd=end;
-    }
-
-    document.getElementById("today-btn").onclick=()=>{const today=new Date().toISOString().split('T')[0]; setRange(today,today);};
-    document.getElementById("last7-btn").onclick=()=>{const today=new Date(); const past=new Date(); past.setDate(today.getDate()-6); setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
-    document.getElementById("month-btn").onclick=()=>{const today=new Date(); const first=new Date(today.getFullYear(),today.getMonth(),1); setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
-
-    document.getElementById("report-search-btn").onclick=()=>{
-        if(!selectedStart||!selectedEnd){alert("Select a date range"); return;}
-        fetch(`/reports?start=${selectedStart}&end=${selectedEnd}`,{headers:{"X-Requested-With":"XMLHttpRequest"}})
-        .then(res=>res.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
-    };
-
-    document.getElementById("report-export-btn").onclick=()=>{
-        if(!selectedStart||!selectedEnd){alert("Select a date range"); return;}
-        window.location = `/reports?start=${selectedStart}&end=${selectedEnd}&export=1`;
-    };
-
-    {% if request.args.get("start") and request.args.get("end") %}
-        setRange("{{ request.args.get('start') }}","{{ request.args.get('end') }}");
-    {% endif %}
-});
-
-// TEMPLATE SEARCH
+// ------------------ Template Search
 function filterTemplates(){
     const input=document.getElementById("template-search").value.toLowerCase();
     const table=document.getElementById("template-table");
     const trs=table.getElementsByTagName("tr");
     for(let i=1;i<trs.length;i++){
         const tds=trs[i].getElementsByTagName("td");
-        trs[i].style.display=tds[0].innerText.toLowerCase().includes(input) || tds[1].innerText.toLowerCase().includes(input) ? "" : "none";
+        if(!tds[0]) continue;
+        const match=tds[0].innerText.toLowerCase().includes(input)||tds[1].innerText.toLowerCase().includes(input);
+        trs[i].style.display=match?"":"none";
     }
 }
 
-// MODAL
-function confirmUpdate(id){
-    const modal=document.getElementById("modal");
-    const text=document.getElementById("modal-text");
-    const form=document.getElementById("modal-form");
-    text.innerText="Are you sure you want to update this template?";
-    form.action=`/templates/update/${id}`;
-    modal.style.display="flex";
+// ------------------ AJAX Template Update/Delete
+let editId=null;
+function editTemplate(id){
+    editId=id;
+    const row=document.getElementById("template-row-"+id);
+    document.getElementById("edit-name").value=row.querySelector(".tpl-name").innerText;
+    document.getElementById("edit-content").value=row.querySelector(".tpl-content").innerText;
+    document.getElementById("edit-modal").style.display="flex";
 }
-function confirmDelete(id){
-    const modal=document.getElementById("modal");
-    const text=document.getElementById("modal-text");
-    const form=document.getElementById("modal-form");
-    text.innerText="Are you sure you want to delete this template?";
-    form.action=`/templates/delete/${id}`;
-    modal.style.display="flex";
+function closeModal(){document.getElementById("edit-modal").style.display="none";}
+
+document.getElementById("save-template-btn").addEventListener("click",()=>{
+    const name=document.getElementById("edit-name").value;
+    const content=document.getElementById("edit-content").value;
+    fetch(`/templates/update/${editId}`,{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded","X-Requested-With":"XMLHttpRequest"},
+        body:`name=${encodeURIComponent(name)}&content=${encodeURIComponent(content)}`
+    }).then(r=>r.json()).then(res=>{
+        if(res.status=="success"){
+            const row=document.getElementById("template-row-"+editId);
+            row.querySelector(".tpl-name").innerText=res.name;
+            row.querySelector(".tpl-content").innerText=res.content;
+            closeModal();
+            alert(res.message);
+        }
+    });
+});
+
+function deleteTemplate(id){
+    if(!confirm("Are you sure you want to delete this template?")) return;
+    fetch(`/templates/delete/${id}`,{
+        method:"POST",
+        headers:{"X-Requested-With":"XMLHttpRequest"}
+    }).then(r=>r.json()).then(res=>{
+        if(res.status=="success"){
+            const row=document.getElementById("template-row-"+id);
+            row.remove();
+            alert(res.message);
+        }
+    });
 }
-function closeModal(){
-    document.getElementById("modal").style.display="none";
-}
+
+// ------------------ AJAX Send SMS
+document.getElementById("sms-form").addEventListener("submit",e=>{
+    e.preventDefault();
+    const formData=new FormData(e.target);
+    fetch("/send_sms",{method:"POST",body:formData,headers:{"X-Requested-With":"XMLHttpRequest"}})
+    .then(r=>r.json()).then(res=>{
+        document.getElementById("sms-response").innerText=res.message;
+        e.target.reset();
+    });
+});
 </script>
 </body>
 </html>

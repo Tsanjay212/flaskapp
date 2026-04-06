@@ -6,17 +6,13 @@ from functools import wraps
 from io import StringIO
 import csv
 import os, requests, socket
-
-import random
-import string
+import random, string
 
 def generate_dlt_id():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
-
-# Fix for ALB stickiness
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # ----------------------------
@@ -81,7 +77,6 @@ def register():
 
         conn = get_db()
         cursor = conn.cursor()
-
         try:
             cursor.execute(
                 "INSERT INTO users (username,email,password) VALUES (%s,%s,%s)",
@@ -92,7 +87,6 @@ def register():
             return redirect(url_for("login"))
         except:
             flash("User already exists", "danger")
-
         cursor.close()
         conn.close()
 
@@ -112,7 +106,7 @@ def dashboard():
     return render_template("dashboard.html", username=session.get("username"), show_section="send-section")
 
 # ----------------------------
-# Send SMS (AJAX)
+# Send SMS
 # ----------------------------
 @app.route("/send_sms", methods=["POST"])
 @login_required
@@ -155,7 +149,7 @@ def send_sms():
         return redirect(url_for("dashboard"))
 
 # ----------------------------
-# Reports (AJAX + Export CSV)
+# Reports
 # ----------------------------
 @app.route("/reports")
 @login_required
@@ -179,13 +173,11 @@ def reports():
         params.extend([start, end])
 
     query += " GROUP BY day, dest ORDER BY day DESC"
-
     cursor.execute(query, tuple(params))
     data = cursor.fetchall()
     cursor.close()
     conn.close()
 
-    # Export CSV
     if export == "1":
         output = StringIO()
         writer = csv.writer(output)
@@ -195,7 +187,6 @@ def reports():
         return Response(output.getvalue(), mimetype="text/csv",
                         headers={"Content-Disposition": "attachment; filename=sms_summary.csv"})
 
-    # AJAX request
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         table_html = "<table><thead><tr><th>Date</th><th>Recipient</th><th>SMS Count</th></tr></thead><tbody>"
         if data:
@@ -209,7 +200,7 @@ def reports():
     return render_template("dashboard.html", summary_data=data, username=session.get("username"), show_section="report")
 
 # ----------------------------
-# Templates CRUD
+# Templates
 # ----------------------------
 @app.route("/templates")
 @login_required
@@ -229,32 +220,16 @@ def templates():
         base_query += " AND (name LIKE %s OR dlt_template_id LIKE %s)"
         params.extend([f"%{search}%", f"%{search}%"])
 
-    # total count
     cursor.execute("SELECT COUNT(*) as total " + base_query, tuple(params))
     total = cursor.fetchone()["total"]
 
-    # paginated data
-    cursor.execute(
-        "SELECT * " + base_query + " ORDER BY id DESC LIMIT %s OFFSET %s",
-        tuple(params + [per_page, offset])
-    )
+    cursor.execute("SELECT * " + base_query + " ORDER BY id DESC LIMIT %s OFFSET %s", tuple(params + [per_page, offset]))
     data = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-    return render_template(
-        "dashboard.html",
-        templates=data,
-        total=total,
-        page=page,
-        per_page=per_page,
-        search=search,
-        username=session.get("username"),
-        show_section="template-section"
-    )
-
-
+    return render_template("dashboard.html", templates=data, total=total, page=page, per_page=per_page, search=search, username=session.get("username"), show_section="template-section")
 
 @app.route("/templates/create", methods=["POST"])
 @login_required
@@ -265,24 +240,18 @@ def create_template():
     conn = get_db()
     cursor = conn.cursor()
 
-    # generate unique ID
     while True:
         dlt_id = generate_dlt_id()
         cursor.execute("SELECT id FROM templates WHERE dlt_template_id=%s", (dlt_id,))
         if not cursor.fetchone():
             break
 
-    cursor.execute(
-        "INSERT INTO templates (name, content, dlt_template_id) VALUES (%s,%s,%s)",
-        (name, content, dlt_id)
-    )
+    cursor.execute("INSERT INTO templates (name, content, dlt_template_id) VALUES (%s,%s,%s)", (name, content, dlt_id))
     conn.commit()
-
     cursor.close()
     conn.close()
 
     return redirect(url_for("templates"))
-
 
 @app.route("/templates/update/<int:id>", methods=["POST"])
 @login_required
@@ -292,31 +261,27 @@ def update_template(id):
 
     conn = get_db()
     cursor = conn.cursor()
-
-    cursor.execute(
-        "UPDATE templates SET name=%s, content=%s WHERE id=%s",
-        (name, content, id)
-    )
+    cursor.execute("UPDATE templates SET name=%s, content=%s WHERE id=%s", (name, content, id))
     conn.commit()
-
     cursor.close()
     conn.close()
 
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"status": "success", "message": "Template updated", "id": id, "name": name, "content": content})
     return redirect(url_for("templates"))
 
-
-@app.route("/templates/delete/<int:id>")
+@app.route("/templates/delete/<int:id>", methods=["POST"])
 @login_required
 def delete_template(id):
     conn = get_db()
     cursor = conn.cursor()
-
     cursor.execute("DELETE FROM templates WHERE id=%s", (id,))
     conn.commit()
-
     cursor.close()
     conn.close()
 
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"status": "success", "message": "Template deleted", "id": id})
     return redirect(url_for("templates"))
 
 # ----------------------------
