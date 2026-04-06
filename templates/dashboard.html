@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>San-Sms-Platform Dashboard</title>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
@@ -10,36 +11,58 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Arial,sans-serif;}
 body{background:#f8f7f7fb;color:#333;}
 header{background:#02142e;color:white;padding:20px;text-align:center;font-size:22px;font-weight:600;}
-.sidebar{height:100vh;width:230px;position:fixed;top:0;left:0;background:#02142e;padding-top:80px;display:flex;flex-direction:column;}
-.sidebar button{background:none;border:none;color:white;text-align:left;padding:14px 20px;cursor:pointer;width:100%;transition:0.2s;}
-.sidebar button:hover,.sidebar button.active{background:#02060f;color:white;}
-.logout-btn{position:absolute;bottom:10px;width:180px;background:#ef4444;color:white;font-weight:600;border:none;padding:10px;border-radius:6px;cursor:pointer;}
-.logout-btn:hover{background:#dc2626;}
-.main{margin-left:220px;padding:40px;}
-.card{background:white;padding:25px;border-radius:10px;margin-bottom:25px;box-shadow:0 4px 12px rgba(0,0,0,0.05);}
-h2,h3,h4{margin-top:0;}
-input,textarea{width:100%;padding:10px 12px;margin-bottom:15px;border-radius:6px;border:1px solid #d1d5db;font-size:14px;}
-input:focus,textarea:focus{outline:none;border-color:#2563eb;}
-.submit-btn{background:#2563eb;color:white;font-weight:600;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;}
-.submit-btn:hover{background:#1d4ed8;}
-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
-thead{background:#f3f4f6;}
-th,td{padding:10px;text-align:left;border-bottom:1px solid #e5e7eb;}
-tr:hover{background:#f9fafb;}
+
+.sidebar{
+    height:100vh;width:230px;position:fixed;top:0;left:0;
+    background:#02142e;padding-top:80px;display:flex;flex-direction:column;
+}
+
+.sidebar button{
+    background:none;border:none;color:white;
+    text-align:left;padding:14px 20px;cursor:pointer;width:100%;
+}
+
+.sidebar button:hover,.sidebar button.active{background:#02060f;}
+
+.logout-btn{
+    position:absolute;bottom:10px;width:180px;
+    background:#ef4444;color:white;border:none;
+    padding:10px;border-radius:6px;cursor:pointer;
+}
+
+.main{margin-left:230px;padding:40px;}
+
+.card{
+    background:white;padding:25px;border-radius:10px;
+    margin-bottom:25px;box-shadow:0 4px 12px rgba(0,0,0,0.05);
+}
+
+input,textarea{
+    width:100%;padding:10px;margin-bottom:15px;
+    border-radius:6px;border:1px solid #ccc;
+}
+
+.submit-btn{
+    background:#2563eb;color:white;border:none;
+    padding:10px 15px;border-radius:6px;cursor:pointer;
+}
+
 .section{display:none;}
-.report-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:15px;}
-#report-range{min-width:260px;cursor:pointer;}
-.preset-btn{background:#e5e7eb;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;}
-.preset-btn:hover{background:#d1d5db;}
+
+table{width:100%;border-collapse:collapse;}
+th,td{padding:10px;border-bottom:1px solid #eee;}
 </style>
 </head>
+
 <body>
+
 <header>🚀 San-Sms-T-Platform SMS Dashboard</header>
 
 <div class="sidebar">
     <button class="toggle-btn" data-target="send-section">Send SMS</button>
     <button class="toggle-btn" data-target="report-section">Reports</button>
     <button class="toggle-btn" data-target="template-section">Templates</button>
+
     <form method="GET" action="{{ url_for('logout') }}">
         <button class="logout-btn" type="submit">Logout</button>
     </form>
@@ -51,13 +74,13 @@ tr:hover{background:#f9fafb;}
 <div id="send-section" class="section">
     <div class="card">
         <h3>Send SMS</h3>
+
         <form id="sms-form">
-            <label>Recipient Number</label>
-            <input type="text" name="number" placeholder="EX-91798..." required>
-            <label>Message</label>
-            <textarea name="message" rows="4" placeholder="Type your message here" required></textarea>
-            <button type="submit" class="submit-btn">Send SMS</button>
+            <input type="text" name="number" placeholder="Recipient Number" required>
+            <textarea name="message" placeholder="Message" required></textarea>
+            <button type="submit" class="submit-btn">Send</button>
         </form>
+
         <div id="sms-response"></div>
     </div>
 </div>
@@ -66,356 +89,109 @@ tr:hover{background:#f9fafb;}
 <div id="report-section" class="section">
     <div class="card">
         <h3>Reports</h3>
-        <div class="report-filters">
-            <input type="text" id="report-range" placeholder="Select date range" readonly>
-            <button class="preset-btn" id="today-btn">Today</button>
-            <button class="preset-btn" id="last7-btn">Last 7 Days</button>
-            <button class="preset-btn" id="month-btn">This Month</button>
-            <button id="report-search-btn" class="submit-btn">Search</button>
-            <button id="report-export-btn" class="submit-btn" style="background:#10b981;">Export CSV</button>
-        </div>
+
+        <input type="text" id="report-range" placeholder="Select range">
+
+        <button id="report-search-btn" class="submit-btn">Search</button>
+
         <div id="report-table">
             {% if summary_data %}
             <table>
-                <thead><tr><th>Date</th><th>Recipient</th><th>SMS Count</th></tr></thead>
-                <tbody>
-                    {% for row in summary_data %}
-                    <tr>
-                        <td>{{ row.day }}</td>
-                        <td>{{ row.dest }}</td>
-                        <td>{{ row.sms_count }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <tr><th>Date</th><th>Recipient</th><th>Count</th></tr>
+                {% for row in summary_data %}
+                <tr>
+                    <td>{{ row.day }}</td>
+                    <td>{{ row.dest }}</td>
+                    <td>{{ row.sms_count }}</td>
+                </tr>
+                {% endfor %}
             </table>
             {% else %}
-            <p>No SMS records found.</p>
+            <p>No data</p>
             {% endif %}
         </div>
     </div>
 </div>
+
 <!-- TEMPLATES -->
 <div id="template-section" class="section">
     <div class="card">
-        <h3>Templates Manager</h3>
+        <h3>Templates</h3>
 
-<!DOCTYPE html>
-
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>San-Sms-Platform Dashboard</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-<style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Arial,sans-serif;}
-body{background:#f8f7f7fb;color:#333;}
-header{background:#02142e;color:white;padding:20px;text-align:center;font-size:22px;font-weight:600;}
-.sidebar{height:100vh;width:230px;position:fixed;top:0;left:0;background:#02142e;padding-top:80px;display:flex;flex-direction:column;}
-.sidebar button{background:none;border:none;color:white;text-align:left;padding:14px 20px;cursor:pointer;width:100%;transition:0.2s;}
-.sidebar button:hover,.sidebar button.active{background:#02060f;color:white;}
-.logout-btn{position:absolute;bottom:10px;width:180px;background:#ef4444;color:white;font-weight:600;border:none;padding:10px;border-radius:6px;cursor:pointer;}
-.logout-btn:hover{background:#dc2626;}
-.main{margin-left:220px;padding:40px;}
-.card{background:white;padding:25px;border-radius:10px;margin-bottom:25px;box-shadow:0 4px 12px rgba(0,0,0,0.05);}
-h2,h3,h4{margin-top:0;}
-input,textarea{width:100%;padding:10px 12px;margin-bottom:15px;border-radius:6px;border:1px solid #d1d5db;font-size:14px;}
-input:focus,textarea:focus{outline:none;border-color:#2563eb;}
-.submit-btn{background:#2563eb;color:white;font-weight:600;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;}
-.submit-btn:hover{background:#1d4ed8;}
-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
-thead{background:#f3f4f6;}
-th,td{padding:10px;text-align:left;border-bottom:1px solid #e5e7eb;}
-tr:hover{background:#f9fafb;}
-.section{display:none;}
-.report-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:15px;}
-#report-range{min-width:260px;cursor:pointer;}
-.preset-btn{background:#e5e7eb;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;}
-.preset-btn:hover{background:#d1d5db;}
-.active-page{background:#2563eb;color:white;}
-</style>
-
-</head>
-<body>
-
-<header>🚀 San-Sms-T-Platform SMS Dashboard</header>
-
-<div class="sidebar">
-    <button class="toggle-btn" data-target="send-section">Send SMS</button>
-    <button class="toggle-btn" data-target="report-section">Reports</button>
-    <button onclick="window.location.href='/templates'">Templates</button>
-
-```
-<form method="GET" action="{{ url_for('logout') }}">
-    <button class="logout-btn" type="submit">Logout</button>
-</form>
-```
-
-</div>
-
-<div class="main">
-
-<!-- SEND SMS -->
-
-<div id="send-section" class="section">
-    <div class="card">
-        <h3>Send SMS</h3>
-        <form id="sms-form">
-            <label>Recipient Number</label>
-            <input type="text" name="number" placeholder="EX-91798..." required>
-            <label>Message</label>
-            <textarea name="message" rows="4" placeholder="Type your message here" required></textarea>
-            <button type="submit" class="submit-btn">Send SMS</button>
+        <!-- CREATE -->
+        <form method="POST" action="/templates/create">
+            <input type="text" name="name" placeholder="Template Name" required>
+            <textarea name="content" placeholder="Content" required></textarea>
+            <button class="submit-btn">Create</button>
         </form>
-        <div id="sms-response"></div>
-    </div>
-</div>
 
-<!-- REPORTS -->
+        <hr>
 
-<div id="report-section" class="section">
-    <div class="card">
-        <h3>Reports</h3>
-        <div class="report-filters">
-            <input type="text" id="report-range" placeholder="Select date range" readonly>
-            <button class="preset-btn" id="today-btn">Today</button>
-            <button class="preset-btn" id="last7-btn">Last 7 Days</button>
-            <button class="preset-btn" id="month-btn">This Month</button>
-            <button id="report-search-btn" class="submit-btn">Search</button>
-            <button id="report-export-btn" class="submit-btn" style="background:#10b981;">Export CSV</button>
-        </div>
-        <div id="report-table">
-            {% if summary_data %}
-            <table>
-                <thead><tr><th>Date</th><th>Recipient</th><th>SMS Count</th></tr></thead>
-                <tbody>
-                    {% for row in summary_data %}
-                    <tr>
-                        <td>{{ row.day }}</td>
-                        <td>{{ row.dest }}</td>
-                        <td>{{ row.sms_count }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p>No SMS records found.</p>
-            {% endif %}
-        </div>
-    </div>
-</div>
+        <!-- TABLE -->
+        <table>
+            <tr><th>ID</th><th>Name</th><th>Content</th><th>Actions</th></tr>
 
-<!-- TEMPLATES -->
-
-<div id="template-section" class="section">
-    <div class="card">
-        <h3>Templates Manager</h3>
-
-```
-    <!-- CREATE -->
-    <form method="POST" action="/templates/create">
-        <input type="text" name="name" placeholder="Template Name" required>
-        <textarea name="content" placeholder="Template Content" required></textarea>
-        <button type="submit" class="submit-btn">Create Template</button>
-    </form>
-
-    <hr>
-
-    <!-- SEARCH -->
-    <form method="GET" action="/templates">
-        <input type="text" name="search" placeholder="Search name or DLT ID" value="{{ search }}">
-        <button type="submit" class="submit-btn">Search</button>
-    </form>
-
-    <!-- TABLE -->
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>DLT ID</th>
-                <th>Content</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
             {% for t in templates %}
             <tr>
                 <form method="POST" action="/templates/update/{{ t.id }}">
                     <td>{{ t.id }}</td>
-                    <td><input type="text" name="name" value="{{ t.name }}"></td>
-                    <td>{{ t.dlt_template_id }}</td>
-                    <td><input type="text" name="content" value="{{ t.content }}"></td>
+                    <td><input name="name" value="{{ t.name }}"></td>
+                    <td><input name="content" value="{{ t.content }}"></td>
                     <td>
                         <button class="submit-btn">Update</button>
-                        <a href="/templates/delete/{{ t.id }}">
-                            <button type="button" style="background:red;color:white;">Delete</button>
-                        </a>
+                        <a href="/templates/delete/{{ t.id }}">Delete</a>
                     </td>
                 </form>
             </tr>
             {% endfor %}
-        </tbody>
-    </table>
+        </table>
 
-    <!-- PAGINATION -->
-    <div style="margin-top:15px;">
-        {% if total %}
-            {% set total_pages = (total // per_page) + (1 if total % per_page else 0) %}
-            {% for p in range(1, total_pages + 1) %}
-                <a href="/templates?page={{p}}&search={{search}}">
-                    <button class="preset-btn {% if p == page %}active-page{% endif %}">{{p}}</button>
-                </a>
-            {% endfor %}
-        {% endif %}
     </div>
+</div>
 
 </div>
 
-
 <script>
 document.addEventListener("DOMContentLoaded", function(){
-    const buttons=document.querySelectorAll(".toggle-btn");
-    const sections=document.querySelectorAll(".section");
+
+    const buttons = document.querySelectorAll(".toggle-btn");
+    const sections = document.querySelectorAll(".section");
 
     function showSection(id){
-        buttons.forEach(b=>b.classList.remove("active"));
-        const btn=document.querySelector(`.toggle-btn[data-target="${id}"]`);
-        if(btn) btn.classList.add("active");
-        sections.forEach(sec=>sec.style.display="none");
-        const el=document.getElementById(id);
-        if(el) el.style.display="block";
+        sections.forEach(s => s.style.display="none");
+        document.getElementById(id).style.display="block";
+
+        buttons.forEach(b => b.classList.remove("active"));
+        document.querySelector(`[data-target="${id}"]`).classList.add("active");
     }
 
-    {% if show_section %}
-        showSection("{{ show_section }}");
-    {% else %}
-        showSection("send-section");
-    {% endif %}
+    showSection("send-section");
 
-    buttons.forEach(btn=>btn.addEventListener("click",()=>showSection(btn.dataset.target)));
+    buttons.forEach(btn=>{
+        btn.addEventListener("click",()=>{
+            showSection(btn.dataset.target);
+        });
+    });
 
     // SMS AJAX
-    const smsForm=document.getElementById("sms-form");
-    if(smsForm){
-        smsForm.addEventListener("submit",function(e){
-            e.preventDefault();
-            const formData=new FormData(this);
-            fetch("{{ url_for('send_sms') }}",{method:"POST",headers:{"X-Requested-With":"XMLHttpRequest"},body:formData})
-            .then(res=>res.json()).then(res=>{
-                const resp=document.getElementById("sms-response");
-                resp.innerHTML=res.message;
-                resp.style.color=res.status==="Sent"?"green":"red";
-                if(res.status==="Sent") this.reset();
-            });
-        });
-    }
-
-    // Reports
-    let selectedStart=null, selectedEnd=null;
-    const picker=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d",onClose:function(sd){
-        if(sd.length===2){
-            selectedStart=picker.formatDate(sd[0],"Y-m-d");
-            selectedEnd=picker.formatDate(sd[1],"Y-m-d");
-        }
-    }});
-
-    function setRange(start,end){
-        picker.setDate([start,end],true);
-        selectedStart=start;
-        selectedEnd=end;
-    }
-
-    document.getElementById("today-btn").onclick=()=>{
-        const today=new Date().toISOString().split('T')[0];
-        setRange(today,today);
-    };
-
-    document.getElementById("last7-btn").onclick=()=>{
-        const today=new Date();
-        const past=new Date();
-        past.setDate(today.getDate()-6);
-        setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);
-    };
-
-    document.getElementById("month-btn").onclick=()=>{
-        const today=new Date();
-        const first=new Date(today.getFullYear(),today.getMonth(),1);
-        setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);
-    };
-
-    document.getElementById("report-search-btn").onclick=()=>{
-        if(!selectedStart||!selectedEnd){alert("Select a date range"); return;}
-        fetch(`/reports?start=${selectedStart}&end=${selectedEnd}`,{headers:{"X-Requested-With":"XMLHttpRequest"}})
-        .then(res=>res.text()).then(html=>{
-            document.getElementById("report-table").innerHTML=html;
-        });
-    };
-
-    document.getElementById("report-export-btn").onclick=()=>{
-        if(!selectedStart||!selectedEnd){alert("Select a date range"); return;}
-        window.location = `/reports?start=${selectedStart}&end=${selectedEnd}&export=1`;
-    };
-});
-</script>
-
-</body>
-</html>
-
- 
-
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-    const buttons=document.querySelectorAll(".toggle-btn");
-    const sections=document.querySelectorAll(".section");
-    function showSection(id){
-        buttons.forEach(b=>b.classList.remove("active"));
-        const btn=document.querySelector(`.toggle-btn[data-target="${id}"]`);
-        if(btn) btn.classList.add("active");
-        sections.forEach(sec=>sec.style.display="none");
-        const el=document.getElementById(id);
-        if(el) el.style.display="block";
-    }
-    {% if show_section %} showSection("{{ show_section }}"); {% else %} showSection("send-section"); {% endif %}
-    buttons.forEach(btn=>btn.addEventListener("click",()=>showSection(btn.dataset.target)));
-
-    // SMS AJAX
-    const smsForm=document.getElementById("sms-form");
-    if(smsForm){smsForm.addEventListener("submit",function(e){
+    document.getElementById("sms-form").addEventListener("submit", function(e){
         e.preventDefault();
-        const formData=new FormData(this);
-        fetch("{{ url_for('send_sms') }}",{method:"POST",headers:{"X-Requested-With":"XMLHttpRequest"},body:formData})
-        .then(res=>res.json()).then(res=>{
-            const resp=document.getElementById("sms-response");
-            resp.innerHTML=res.message;
-            resp.style.color=res.status==="Sent"?"green":"red";
-            if(res.status==="Sent") this.reset();
+
+        fetch("{{ url_for('send_sms') }}", {
+            method:"POST",
+            body:new FormData(this)
+        })
+        .then(r=>r.json())
+        .then(r=>{
+            const box = document.getElementById("sms-response");
+            box.innerHTML = r.message;
         });
-    });}
+    });
 
-    // Reports
-    let selectedStart=null, selectedEnd=null;
-    const picker=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d",onClose:function(sd){if(sd.length===2){selectedStart=picker.formatDate(sd[0],"Y-m-d"); selectedEnd=picker.formatDate(sd[1],"Y-m-d");}}});
-    function setRange(start,end){picker.setDate([start,end],true); selectedStart=start; selectedEnd=end;}
-    document.getElementById("today-btn").onclick=()=>{const today=new Date().toISOString().split('T')[0]; setRange(today,today);};
-    document.getElementById("last7-btn").onclick=()=>{const today=new Date(); const past=new Date(); past.setDate(today.getDate()-6); setRange(past.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
-    document.getElementById("month-btn").onclick=()=>{const today=new Date(); const first=new Date(today.getFullYear(),today.getMonth(),1); setRange(first.toISOString().split('T')[0],today.toISOString().split('T')[0]);};
-
-    document.getElementById("report-search-btn").onclick=()=>{
-        if(!selectedStart||!selectedEnd){alert("Select a date range"); return;}
-        fetch(`/reports?start=${selectedStart}&end=${selectedEnd}`,{headers:{"X-Requested-With":"XMLHttpRequest"}})
-        .then(res=>res.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
-    };
-    document.getElementById("report-export-btn").onclick=()=>{
-        if(!selectedStart||!selectedEnd){alert("Select a date range"); return;}
-        window.location = `/reports?start=${selectedStart}&end=${selectedEnd}&export=1`;
-    };
-
-    {% if request.args.get("start") and request.args.get("end") %}
-    setRange("{{ request.args.get('start') }}","{{ request.args.get('end') }}");
-    {% endif %}
+    // Date picker
+    flatpickr("#report-range",{mode:"range"});
 });
 </script>
+
 </body>
 </html>
