@@ -81,7 +81,6 @@ tr:hover{background:#f9fafb;}
 
             <label>Message</label>
             <textarea id="message-box" name="message" rows="4" placeholder="Type your message here" required></textarea>
-
             <button type="submit" class="submit-btn">Send SMS</button>
         </form>
         <div id="sms-response" style="margin-top:10px;"></div>
@@ -133,7 +132,6 @@ tr:hover{background:#f9fafb;}
             </form>
             <input type="text" id="template-search" placeholder="Search by DLT ID or Name" onkeyup="filterTemplates()">
         </div>
-
         <table id="template-table">
             <thead>
                 <tr>
@@ -156,13 +154,12 @@ tr:hover{background:#f9fafb;}
                         <button class="cancel-btn" onclick="deleteTemplate({{ t.id }})">Delete</button>
                     </td>
                 </tr>
-                {% endfor %}
                 {% if templates|length == 0 %}
                 <tr><td colspan="5">No templates found.</td></tr>
                 {% endif %}
+                {% endfor %}
             </tbody>
         </table>
-
         {% if total > per_page %}
         <div style="margin-top:10px;">
             {% for p in range(1, (total // per_page) + 2) %}
@@ -187,70 +184,65 @@ tr:hover{background:#f9fafb;}
 </div>
 
 <script>
-// ================== Section toggle & persistence ==================
-const sections = document.querySelectorAll(".section");
-const btns = document.querySelectorAll(".toggle-btn");
+const sections=document.querySelectorAll(".section");
+const btns=document.querySelectorAll(".toggle-btn");
 
-function showSection(sectionId) {
-    sections.forEach(s => s.style.display = "none");
-    document.getElementById(sectionId).style.display = "block";
-    btns.forEach(b => b.classList.remove("active"));
+// Persist active section
+const activeSection = localStorage.getItem("activeSection") || "{{ show_section }}";
+function showSection(sectionId){
+    sections.forEach(s=>s.style.display="none");
+    document.getElementById(sectionId).style.display="block";
+    btns.forEach(b=>b.classList.remove("active"));
     document.querySelector(`.toggle-btn[data-target="${sectionId}"]`).classList.add("active");
     localStorage.setItem("activeSection", sectionId);
 }
+btns.forEach(b=>b.addEventListener("click", ()=> showSection(b.dataset.target)));
+showSection(activeSection);
 
-btns.forEach(b => b.addEventListener("click", () => showSection(b.dataset.target)));
-
-const savedSection = localStorage.getItem("activeSection");
-if(savedSection && document.getElementById(savedSection)){
-    showSection(savedSection);
-} else {
-    showSection("{{ show_section }}");
-}
-
-// ================== Template search ==================
+// Template Search
 function filterTemplates(){
     const input = document.getElementById("template-search").value.toLowerCase();
-    const table = document.getElementById("template-table");
-    const trs = table.getElementsByTagName("tr");
-    for (let i = 1; i < trs.length; i++) {
-        const tds = trs[i].getElementsByTagName("td");
-        if (!tds[0]) continue;
-        const name = tds[1].innerText.toLowerCase();
-        const dltId = tds[2].innerText.toLowerCase();
-        trs[i].style.display = name.includes(input) || dltId.includes(input) ? "" : "none";
+    const trs = document.getElementById("template-table").getElementsByTagName("tr");
+    for(let i=1;i<trs.length;i++){
+        const tds=trs[i].getElementsByTagName("td");
+        if(!tds[0]) continue;
+        const name=tds[1].innerText.toLowerCase();
+        const dltId=tds[2].innerText.toLowerCase();
+        trs[i].style.display = (name.includes(input)||dltId.includes(input)) ? "" : "none";
     }
 }
 
-// ================== Template update/delete ==================
-let editId = null;
+// AJAX Template Edit/Delete
+let editId=null;
 function editTemplate(id){
-    editId = id;
-    const row = document.getElementById("template-row-"+id);
-    document.getElementById("edit-name").value = row.querySelector(".tpl-name").innerText;
-    document.getElementById("edit-content").value = row.querySelector(".tpl-content").innerText;
-    document.getElementById("edit-modal").style.display = "flex";
+    editId=id;
+    const row=document.getElementById("template-row-"+id);
+    document.getElementById("edit-name").value=row.querySelector(".tpl-name").innerText;
+    document.getElementById("edit-content").value=row.querySelector(".tpl-content").innerText;
+    document.getElementById("edit-modal").style.display="flex";
 }
 function closeModal(){document.getElementById("edit-modal").style.display="none";}
-document.getElementById("save-template-btn").addEventListener("click", ()=>{
-    const name = document.getElementById("edit-name").value;
-    const content = document.getElementById("edit-content").value;
+document.getElementById("save-template-btn").addEventListener("click",()=>{
+    const name=document.getElementById("edit-name").value;
+    const content=document.getElementById("edit-content").value;
     fetch(`/templates/update/${editId}`,{
         method:"POST",
         headers:{"Content-Type":"application/x-www-form-urlencoded","X-Requested-With":"XMLHttpRequest"},
         body:`name=${encodeURIComponent(name)}&content=${encodeURIComponent(content)}`
     }).then(r=>r.json()).then(res=>{
         if(res.status=="success"){
-            const row = document.getElementById("template-row-"+editId);
-            row.querySelector(".tpl-name").innerText = res.name;
-            row.querySelector(".tpl-content").innerText = res.content;
-
-            // ✅ Update dropdown in Send SMS immediately
-            const option = document.querySelector(`#template-select option[value="${editId}"]`);
-            if(option){
-                option.setAttribute("data-content", res.content);
+            const row=document.getElementById("template-row-"+editId);
+            row.querySelector(".tpl-name").innerText=res.name;
+            row.querySelector(".tpl-content").innerText=res.content;
+            // update send sms dropdown dynamically
+            const dropdown=document.getElementById("template-select");
+            for(let opt of dropdown.options){
+                if(opt.value==res.id){
+                    opt.text=res.name;
+                    opt.setAttribute("data-content",res.content);
+                    break;
+                }
             }
-
             closeModal();
             alert(res.message);
         }
@@ -258,82 +250,72 @@ document.getElementById("save-template-btn").addEventListener("click", ()=>{
 });
 function deleteTemplate(id){
     if(!confirm("Are you sure you want to delete this template?")) return;
-    fetch(`/templates/delete/${id}`,{method:"POST",headers:{"X-Requested-With":"XMLHttpRequest"}})
-        .then(r=>r.json())
-        .then(res=>{
-            if(res.status=="success"){
-                const row = document.getElementById("template-row-"+id);
-                row.remove();
-                // Remove from dropdown too
-                const option = document.querySelector(`#template-select option[value="${id}"]`);
-                if(option) option.remove();
-                alert(res.message);
+    fetch(`/templates/delete/${id}`,{method:"POST",headers:{"X-Requested-With":"XMLHttpRequest"}}).then(r=>r.json()).then(res=>{
+        if(res.status=="success"){
+            document.getElementById("template-row-"+id).remove();
+            const dropdown=document.getElementById("template-select");
+            for(let i=0;i<dropdown.options.length;i++){
+                if(dropdown.options[i].value==id){
+                    dropdown.remove(i);
+                    break;
+                }
             }
-        });
+            alert(res.message);
+        }
+    });
 }
 
-// ================== Send SMS ==================
-document.getElementById("sms-form").addEventListener("submit", e=>{
+// Send SMS AJAX
+document.getElementById("sms-form").addEventListener("submit",e=>{
     e.preventDefault();
-    const formData = new FormData(e.target);
+    const formData=new FormData(e.target);
     fetch("/send_sms",{method:"POST",body:formData,headers:{"X-Requested-With":"XMLHttpRequest"}})
-        .then(r=>r.json())
-        .then(res=>{
-            document.getElementById("sms-response").innerText = res.message;
-            e.target.reset();
-        });
-});
-
-// ================== Reports datepicker ==================
-const reportRange = flatpickr("#report-range", {mode:"range", dateFormat:"Y-m-d"});
-document.getElementById("today-btn").addEventListener("click", () => {
-    let today = new Date();
-    reportRange.setDate([today, today]);
-});
-document.getElementById("last7-btn").addEventListener("click", () => {
-    let d = new Date(); d.setDate(d.getDate()-6);
-    reportRange.setDate([d, new Date()]);
-});
-document.getElementById("month-btn").addEventListener("click", () => {
-    let now = new Date();
-    reportRange.setDate([new Date(now.getFullYear(), now.getMonth(), 1), new Date()]);
-});
-document.getElementById("report-search-btn").addEventListener("click", () => {
-    const range = reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
-    let url = "/reports";
-    if(range.length==2) url += "?start="+range[0]+"&end="+range[1];
-    fetch(url,{headers:{"X-Requested-With":"XMLHttpRequest"}}).then(r=>r.text()).then(html=>{
-        document.getElementById("report-table").innerHTML = html;
+    .then(r=>r.json()).then(res=>{
+        document.getElementById("sms-response").innerText=res.message;
+        e.target.reset();
+        document.getElementById("message-box").removeAttribute("readonly");
+        document.getElementById("message-box").style.background="white";
+        document.getElementById("message-box").style.cursor="text";
     });
 });
-document.getElementById("report-export-btn").addEventListener("click", ()=>{
-    const range = reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
-    let url = "/reports?export=1";
-    if(range.length==2) url += "&start="+range[0]+"&end="+range[1];
-    window.location.href = url;
+
+// Template dropdown auto-fill message
+document.getElementById("template-select").addEventListener("change",function(){
+    const selectedOption=this.options[this.selectedIndex];
+    const content=selectedOption.getAttribute("data-content");
+    const msg=document.getElementById("message-box");
+    if(content){
+        msg.value=content;
+        msg.setAttribute("readonly",true);
+        msg.style.background="#f3f4f6";
+        msg.style.cursor="not-allowed";
+    }else{
+        msg.value="";
+        msg.removeAttribute("readonly");
+        msg.style.background="white";
+        msg.style.cursor="text";
+    }
 });
 
-// ================== Template select → fill + lock message ==================
-document.addEventListener("DOMContentLoaded", ()=>{
-    const templateDropdown = document.getElementById("template-select");
-    const messageBox = document.getElementById("message-box");
-    if(templateDropdown && messageBox){
-        templateDropdown.addEventListener("change", function(){
-            const selectedOption = this.options[this.selectedIndex];
-            const content = selectedOption.getAttribute("data-content");
-            if(content && content !== "null"){
-                messageBox.value = content;
-                messageBox.setAttribute("readonly", true);
-                messageBox.style.background="#f3f4f6";
-                messageBox.style.cursor="not-allowed";
-            } else {
-                messageBox.value="";
-                messageBox.removeAttribute("readonly");
-                messageBox.style.background="white";
-                messageBox.style.cursor="text";
-            }
-        });
-    }
+// Flatpickr and report presets
+const reportRange = flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d"});
+document.getElementById("today-btn").addEventListener("click",()=>{
+    let d=new Date(); reportRange.setDate([d,d]);
+});
+document.getElementById("last7-btn").addEventListener("click",()=>{
+    let d=new Date(); d.setDate(d.getDate()-6); reportRange.setDate([d,new Date()]);
+});
+document.getElementById("month-btn").addEventListener("click",()=>{
+    let n=new Date(); reportRange.setDate([new Date(n.getFullYear(),n.getMonth(),1),new Date()]);
+});
+document.getElementById("report-search-btn").addEventListener("click",()=>{
+    const range=reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
+    let url="/reports"; if(range.length==2) url+="?start="+range[0]+"&end="+range[1];
+    fetch(url,{headers:{"X-Requested-With":"XMLHttpRequest"}}).then(r=>r.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
+});
+document.getElementById("report-export-btn").addEventListener("click",()=>{
+    const range=reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
+    let url="/reports?export=1"; if(range.length==2) url+="&start="+range[0]+"&end="+range[1]; window.location.href=url;
 });
 </script>
 </body>

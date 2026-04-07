@@ -112,7 +112,12 @@ def logout():
 def dashboard():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM templates ORDER BY id DESC LIMIT 5")
+
+    # Only fetch templates for the logged-in user
+    cursor.execute(
+        "SELECT * FROM templates WHERE user_id=%s ORDER BY id DESC LIMIT 5",
+        (session["user_id"],)
+    )
     last_templates = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -236,7 +241,7 @@ def reports():
     return render_template("dashboard.html", summary_data=data, username=session.get("username"), show_section="report", total=len(data), per_page=5)
 
 # ----------------------------
-# Templates
+# Templates CRUD
 # ----------------------------
 @app.route("/templates")
 @login_required
@@ -249,8 +254,8 @@ def templates():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
-    base_query = "FROM templates WHERE 1=1"
-    params = []
+    base_query = "FROM templates WHERE user_id=%s"
+    params = [session["user_id"]]
 
     if search:
         base_query += " AND (name LIKE %s OR dlt_template_id LIKE %s)"
@@ -259,25 +264,38 @@ def templates():
     cursor.execute("SELECT COUNT(*) as total " + base_query, tuple(params))
     total = cursor.fetchone()["total"]
 
-    cursor.execute("SELECT * " + base_query + " ORDER BY id DESC LIMIT %s OFFSET %s", tuple(params + [per_page, offset]))
+    cursor.execute(
+        "SELECT * " + base_query + " ORDER BY id DESC LIMIT %s OFFSET %s",
+        tuple(params + [per_page, offset])
+    )
     data = cursor.fetchall()
-
     cursor.close()
     conn.close()
 
-    return render_template("dashboard.html", templates=data, total=total, page=page, per_page=per_page, search=search, username=session.get("username"), show_section="template-section")
+    return render_template(
+        "dashboard.html",
+        templates=data,
+        total=total,
+        page=page,
+        per_page=per_page,
+        search=search,
+        username=session.get("username"),
+        show_section="template-section"
+    )
 
 @app.route("/templates/create", methods=["POST"])
 @login_required
 def create_template():
     name = request.form.get("name")
     content = request.form.get("content")
-
     dlt_id = generate_dlt_id()  # 10-digit starting with 212
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO templates (name, content, dlt_template_id) VALUES (%s,%s,%s)", (name, content, dlt_id))
+    cursor.execute(
+        "INSERT INTO templates (user_id, name, content, dlt_template_id) VALUES (%s,%s,%s,%s)",
+        (session["user_id"], name, content, dlt_id)
+    )
     conn.commit()
     cursor.close()
     conn.close()
@@ -292,13 +310,22 @@ def update_template(id):
 
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE templates SET name=%s, content=%s WHERE id=%s", (name, content, id))
+    cursor.execute(
+        "UPDATE templates SET name=%s, content=%s WHERE id=%s AND user_id=%s",
+        (name, content, id, session["user_id"])
+    )
     conn.commit()
     cursor.close()
     conn.close()
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": "success", "message": "Template updated", "id": id, "name": name, "content": content})
+        return jsonify({
+            "status": "success",
+            "message": "Template updated",
+            "id": id,
+            "name": name,
+            "content": content
+        })
     return redirect(url_for("templates"))
 
 @app.route("/templates/delete/<int:id>", methods=["POST"])
@@ -306,11 +333,10 @@ def update_template(id):
 def delete_template(id):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM templates WHERE id=%s", (id,))
+    cursor.execute("DELETE FROM templates WHERE id=%s AND user_id=%s", (id, session["user_id"]))
     conn.commit()
     cursor.close()
     conn.close()
-
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"status": "success", "message": "Template deleted", "id": id})
     return redirect(url_for("templates"))
