@@ -192,16 +192,40 @@ tr:hover{background:#f9fafb;}
 </div>
 
 <script>
-// Section toggle
-const sections=document.querySelectorAll(".section");
-const btns=document.querySelectorAll(".toggle-btn");
-btns.forEach(b=>b.addEventListener("click",()=>{
-    sections.forEach(s=>s.style.display="none");
-    document.getElementById(b.dataset.target).style.display="block";
-    btns.forEach(x=>x.classList.remove("active"));
-    b.classList.add("active");
-}));
-document.getElementById("{{ show_section }}").style.display="block";
+// Section toggle with persistence
+const sections = document.querySelectorAll(".section");
+const btns = document.querySelectorAll(".toggle-btn");
+
+// Function to show section
+function showSection(sectionId) {
+    sections.forEach(s => s.style.display = "none");
+    document.getElementById(sectionId).style.display = "block";
+
+    btns.forEach(x => x.classList.remove("active"));
+    document.querySelector(`[data-target="${sectionId}"]`).classList.add("active");
+
+    // Save selected tab
+    localStorage.setItem("activeTab", sectionId);
+}
+
+// Button click
+btns.forEach(b => {
+    b.addEventListener("click", () => {
+        showSection(b.dataset.target);
+    });
+});
+
+// On page load → restore tab
+document.addEventListener("DOMContentLoaded", function () {
+    const savedTab = localStorage.getItem("activeTab");
+
+    if (savedTab && document.getElementById(savedTab)) {
+        showSection(savedTab);
+    } else {
+        // fallback to server value
+        showSection("{{ show_section }}");
+    }
+});
 
 // Template search
 function filterTemplates(){
