@@ -267,15 +267,43 @@ document.getElementById("sms-form").addEventListener("submit",e=>{
 });
 
 // Reports Datepicker & Presets
-const reportRange=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d"});
-document.getElementById("today-btn").addEventListener("click",()=>{reportRange.setDate(new Date());});
-document.getElementById("last7-btn").addEventListener("click",()=>{let d=new Date();d.setDate(d.getDate()-6);reportRange.setDate([d,new Date()]);});
-document.getElementById("month-btn").addEventListener("click",()=>{let now=new Date();reportRange.setDate([new Date(now.getFullYear(),now.getMonth(),1),new Date()]);});
-document.getElementById("report-search-btn").addEventListener("click",()=>{
-    const range=reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
-    let url="/reports";
-    if(range.length==2) url+="?start="+range[0]+"&end="+range[1];
-    fetch(url,{headers:{"X-Requested-With":"XMLHttpRequest"}}).then(r=>r.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
+const reportRange = flatpickr("#report-range", {mode: "range", dateFormat: "Y-m-d"});
+
+// ✅ Today button fix (set start & end to today)
+document.getElementById("today-btn").addEventListener("click", () => {
+    let today = new Date();
+    reportRange.setDate([today, today]);  // start = today, end = today
+});
+
+// Last 7 Days
+document.getElementById("last7-btn").addEventListener("click", () => {
+    let d = new Date();
+    d.setDate(d.getDate() - 6);
+    reportRange.setDate([d, new Date()]);
+});
+
+// This Month
+document.getElementById("month-btn").addEventListener("click", () => {
+    let now = new Date();
+    reportRange.setDate([new Date(now.getFullYear(), now.getMonth(), 1), new Date()]);
+});
+
+// Search reports
+document.getElementById("report-search-btn").addEventListener("click", () => {
+    const range = reportRange.selectedDates.map(d => d.toISOString().slice(0,10));
+    let url = "/reports";
+    if(range.length == 2) url += "?start=" + range[0] + "&end=" + range[1];
+    fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}})
+        .then(r => r.text())
+        .then(html => { document.getElementById("report-table").innerHTML = html; });
+});
+
+// Export CSV
+document.getElementById("report-export-btn").addEventListener("click", () => {
+    const range = reportRange.selectedDates.map(d => d.toISOString().slice(0,10));
+    let url = "/reports?export=1";
+    if(range.length == 2) url += "&start=" + range[0] + "&end=" + range[1];
+    window.location.href = url;
 });
 document.getElementById("report-export-btn").addEventListener("click",()=>{
     const range=reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
