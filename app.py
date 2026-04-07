@@ -134,6 +134,22 @@ def dashboard():
 def send_sms():
     number = request.form.get("number")
     message_text = request.form.get("message")
+    template_id = request.form.get("template_id")
+
+# If template selected, override message safely
+if template_id:
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT content FROM templates WHERE id=%s", (template_id,))
+        tpl = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if tpl and tpl.get("content"):
+            message_text = tpl["content"]
+    except:
+        pass  # fail silently to avoid breaking SMS flow
 
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
     api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="

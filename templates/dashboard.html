@@ -65,13 +65,28 @@ tr:hover{background:#f9fafb;}
 <div id="send-section" class="section">
     <div class="card">
         <h3>Send SMS</h3>
+
         <form id="sms-form">
             <label>Recipient Number</label>
             <input type="text" name="number" placeholder="EX-91798..." required>
+
+            <!-- ✅ NEW TEMPLATE DROPDOWN -->
+            <label>Select Template</label>
+            <select id="template-select" name="template_id">
+                <option value="">-- Select Template --</option>
+                {% for t in templates %}
+                    <option value="{{ t.id }}" data-content="{{ t.content }}">
+                        {{ t.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
             <label>Message</label>
-            <textarea name="message" rows="4" placeholder="Type your message here" required></textarea>
+            <textarea id="message-box" name="message" rows="4" placeholder="Type your message here" required></textarea>
+
             <button type="submit" class="submit-btn">Send SMS</button>
         </form>
+
         <div id="sms-response" style="margin-top:10px;"></div>
     </div>
 </div>
