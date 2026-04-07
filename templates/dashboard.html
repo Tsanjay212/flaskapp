@@ -2,21 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>San-SMS Platform Dashboard</title>
+<title>🚀 San-SMS Platform Dashboard</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Arial,sans-serif;}
 body{background:#f4f5f7;color:#333;}
-header{background:#1f2937;color:white;padding:20px;display:flex;justify-content:space-between;align-items:center;}
+header{
+    background:#1f2937;color:white;padding:20px;display:flex;justify-content:space-between;align-items:center;
+    position: fixed; top: 0; left:0; right:0; z-index:1001;
+}
 header h1{font-size:22px;font-weight:600;}
 header .user-info{font-size:14px;}
-.sidebar{height:100vh;width:240px;position:fixed;top:0;left:0;background:#111827;padding-top:80px;display:flex;flex-direction:column;}
+.sidebar{height:100vh;width:240px;position:fixed;top:0;left:0;background:#111827;padding-top:80px;display:flex;flex-direction:column;z-index:1000;}
 .sidebar button{background:none;border:none;color:white;text-align:left;padding:16px 20px;cursor:pointer;width:100%;transition:0.2s;font-size:16px;}
 .sidebar button:hover,.sidebar button.active{background:#374151;color:white;}
 .logout-btn{background:#ef4444;color:white;font-weight:600;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;margin:20px;transition:0.2s;}
 .logout-btn:hover{background:#dc2626;}
-.main{margin-left:240px;padding:40px;}
+.main{margin-left:240px;padding:100px 40px 40px 40px;}
 .card{background:white;padding:25px;border-radius:12px;margin-bottom:30px;box-shadow:0 6px 15px rgba(0,0,0,0.08);transition:0.3s;}
 .card:hover{box-shadow:0 8px 20px rgba(0,0,0,0.12);}
 h2,h3,h4{margin-top:0;margin-bottom:15px;}
@@ -24,7 +27,9 @@ input,textarea,select{width:100%;padding:10px 12px;margin-bottom:12px;border-rad
 input:focus,textarea:focus,select:focus{outline:none;border-color:#2563eb;}
 .submit-btn{background:#2563eb;color:white;font-weight:600;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;transition:0.2s;}
 .submit-btn:hover{background:#1d4ed8;}
-.cancel-btn{background:#9ca3af;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-left:5px;}
+.cancel-btn{color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-left:5px;}
+.cancel-btn.delete-btn{background:#ef4444;}
+.cancel-btn.delete-btn:hover{background:#dc2626;}
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
 thead{background:#f3f4f6;}
 th,td{padding:12px;text-align:left;border-bottom:1px solid #e5e7eb;}
@@ -68,7 +73,6 @@ tr:hover{background:#f9fafb;}
         <form id="sms-form">
             <label>Recipient Number</label>
             <input type="text" name="number" placeholder="EX-91798..." required>
-
             <label>Select Template</label>
             <select id="template-select" name="template_id">
                 <option value="">-- Select Template --</option>
@@ -78,7 +82,6 @@ tr:hover{background:#f9fafb;}
                     </option>
                 {% endfor %}
             </select>
-
             <label>Message</label>
             <textarea id="message-box" name="message" rows="4" placeholder="Type your message here" required></textarea>
             <button type="submit" class="submit-btn">Send SMS</button>
@@ -132,6 +135,7 @@ tr:hover{background:#f9fafb;}
             </form>
             <input type="text" id="template-search" placeholder="Search by DLT ID or Name" onkeyup="filterTemplates()">
         </div>
+
         <table id="template-table">
             <thead>
                 <tr>
@@ -151,13 +155,13 @@ tr:hover{background:#f9fafb;}
                     <td class="tpl-content">{{ t.content }}</td>
                     <td>
                         <button class="submit-btn" onclick="editTemplate({{ t.id }})">Update</button>
-                        <button class="cancel-btn" onclick="deleteTemplate({{ t.id }})">Delete</button>
+                        <button class="cancel-btn delete-btn" onclick="deleteTemplate({{ t.id }})">Delete</button>
                     </td>
                 </tr>
+                {% endfor %}
                 {% if templates|length == 0 %}
                 <tr><td colspan="5">No templates found.</td></tr>
                 {% endif %}
-                {% endfor %}
             </tbody>
         </table>
         {% if total > per_page %}
@@ -184,35 +188,36 @@ tr:hover{background:#f9fafb;}
 </div>
 
 <script>
+// Section toggle
 const sections=document.querySelectorAll(".section");
 const btns=document.querySelectorAll(".toggle-btn");
-
-// Persist active section
-const activeSection = localStorage.getItem("activeSection") || "{{ show_section }}";
-function showSection(sectionId){
+btns.forEach(b=>b.addEventListener("click",()=>{
     sections.forEach(s=>s.style.display="none");
-    document.getElementById(sectionId).style.display="block";
-    btns.forEach(b=>b.classList.remove("active"));
-    document.querySelector(`.toggle-btn[data-target="${sectionId}"]`).classList.add("active");
-    localStorage.setItem("activeSection", sectionId);
-}
-btns.forEach(b=>b.addEventListener("click", ()=> showSection(b.dataset.target)));
-showSection(activeSection);
+    document.getElementById(b.dataset.target).style.display="block";
+    btns.forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    localStorage.setItem("activeSection", b.dataset.target);
+}));
 
-// Template Search
+// Restore active section
+const activeSection = localStorage.getItem("activeSection") || "{{ show_section }}";
+if(activeSection) document.getElementById(activeSection).style.display="block";
+
+// Template search
 function filterTemplates(){
     const input = document.getElementById("template-search").value.toLowerCase();
-    const trs = document.getElementById("template-table").getElementsByTagName("tr");
-    for(let i=1;i<trs.length;i++){
-        const tds=trs[i].getElementsByTagName("td");
+    const table = document.getElementById("template-table");
+    const trs = table.getElementsByTagName("tr");
+    for (let i = 1; i < trs.length; i++) {
+        const tds = trs[i].getElementsByTagName("td");
         if(!tds[0]) continue;
-        const name=tds[1].innerText.toLowerCase();
-        const dltId=tds[2].innerText.toLowerCase();
-        trs[i].style.display = (name.includes(input)||dltId.includes(input)) ? "" : "none";
+        const name = tds[1].innerText.toLowerCase();
+        const dltId = tds[2].innerText.toLowerCase();
+        trs[i].style.display = name.includes(input) || dltId.includes(input) ? "" : "none";
     }
 }
 
-// AJAX Template Edit/Delete
+// Template modal handling
 let editId=null;
 function editTemplate(id){
     editId=id;
@@ -234,15 +239,9 @@ document.getElementById("save-template-btn").addEventListener("click",()=>{
             const row=document.getElementById("template-row-"+editId);
             row.querySelector(".tpl-name").innerText=res.name;
             row.querySelector(".tpl-content").innerText=res.content;
-            // update send sms dropdown dynamically
-            const dropdown=document.getElementById("template-select");
-            for(let opt of dropdown.options){
-                if(opt.value==res.id){
-                    opt.text=res.name;
-                    opt.setAttribute("data-content",res.content);
-                    break;
-                }
-            }
+            // update dropdown for send sms
+            const option = document.querySelector(`#template-select option[value='${editId}']`);
+            if(option){ option.setAttribute("data-content", res.content); }
             closeModal();
             alert(res.message);
         }
@@ -253,19 +252,14 @@ function deleteTemplate(id){
     fetch(`/templates/delete/${id}`,{method:"POST",headers:{"X-Requested-With":"XMLHttpRequest"}}).then(r=>r.json()).then(res=>{
         if(res.status=="success"){
             document.getElementById("template-row-"+id).remove();
-            const dropdown=document.getElementById("template-select");
-            for(let i=0;i<dropdown.options.length;i++){
-                if(dropdown.options[i].value==id){
-                    dropdown.remove(i);
-                    break;
-                }
-            }
+            const option = document.querySelector(`#template-select option[value='${id}']`);
+            if(option) option.remove();
             alert(res.message);
         }
     });
 }
 
-// Send SMS AJAX
+// Send SMS
 document.getElementById("sms-form").addEventListener("submit",e=>{
     e.preventDefault();
     const formData=new FormData(e.target);
@@ -273,49 +267,50 @@ document.getElementById("sms-form").addEventListener("submit",e=>{
     .then(r=>r.json()).then(res=>{
         document.getElementById("sms-response").innerText=res.message;
         e.target.reset();
-        document.getElementById("message-box").removeAttribute("readonly");
-        document.getElementById("message-box").style.background="white";
-        document.getElementById("message-box").style.cursor="text";
     });
 });
 
-// Template dropdown auto-fill message
-document.getElementById("template-select").addEventListener("change",function(){
-    const selectedOption=this.options[this.selectedIndex];
-    const content=selectedOption.getAttribute("data-content");
-    const msg=document.getElementById("message-box");
-    if(content){
-        msg.value=content;
-        msg.setAttribute("readonly",true);
-        msg.style.background="#f3f4f6";
-        msg.style.cursor="not-allowed";
-    }else{
-        msg.value="";
-        msg.removeAttribute("readonly");
-        msg.style.background="white";
-        msg.style.cursor="text";
-    }
-});
+// Reports Datepicker & Presets
+const reportRange = flatpickr("#report-range", {mode:"range", dateFormat:"Y-m-d"});
+document.getElementById("today-btn").addEventListener("click",()=>{let today=new Date(); reportRange.setDate([today,today]);});
+document.getElementById("last7-btn").addEventListener("click",()=>{let d=new Date(); d.setDate(d.getDate()-6); reportRange.setDate([d,new Date()]);});
+document.getElementById("month-btn").addEventListener("click",()=>{let now=new Date(); reportRange.setDate([new Date(now.getFullYear(),now.getMonth(),1),new Date()]);});
 
-// Flatpickr and report presets
-const reportRange = flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d"});
-document.getElementById("today-btn").addEventListener("click",()=>{
-    let d=new Date(); reportRange.setDate([d,d]);
-});
-document.getElementById("last7-btn").addEventListener("click",()=>{
-    let d=new Date(); d.setDate(d.getDate()-6); reportRange.setDate([d,new Date()]);
-});
-document.getElementById("month-btn").addEventListener("click",()=>{
-    let n=new Date(); reportRange.setDate([new Date(n.getFullYear(),n.getMonth(),1),new Date()]);
-});
+// Reports search/export
 document.getElementById("report-search-btn").addEventListener("click",()=>{
     const range=reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
-    let url="/reports"; if(range.length==2) url+="?start="+range[0]+"&end="+range[1];
+    let url="/reports";
+    if(range.length==2) url+="?start="+range[0]+"&end="+range[1];
     fetch(url,{headers:{"X-Requested-With":"XMLHttpRequest"}}).then(r=>r.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
 });
 document.getElementById("report-export-btn").addEventListener("click",()=>{
     const range=reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
-    let url="/reports?export=1"; if(range.length==2) url+="&start="+range[0]+"&end="+range[1]; window.location.href=url;
+    let url="/reports?export=1";
+    if(range.length==2) url+="&start="+range[0]+"&end="+range[1];
+    window.location.href=url;
+});
+
+// Template select → fill message
+document.addEventListener("DOMContentLoaded",()=>{
+    const templateDropdown = document.getElementById("template-select");
+    const messageBox = document.getElementById("message-box");
+    if(templateDropdown && messageBox){
+        templateDropdown.addEventListener("change", function(){
+            const selectedOption = this.options[this.selectedIndex];
+            const content = selectedOption.getAttribute("data-content");
+            if(content && content!=="null"){
+                messageBox.value = content;
+                messageBox.setAttribute("readonly", true);
+                messageBox.style.background="#f3f4f6";
+                messageBox.style.cursor="not-allowed";
+            } else {
+                messageBox.value = "";
+                messageBox.removeAttribute("readonly");
+                messageBox.style.background="white";
+                messageBox.style.cursor="text";
+            }
+        });
+    }
 });
 </script>
 </body>
