@@ -65,17 +65,17 @@ tr:hover{background:#f9fafb;}
 <div id="send-section" class="section">
     <div class="card">
         <h3>Send SMS</h3>
-
         <form id="sms-form">
             <label>Recipient Number</label>
             <input type="text" name="number" placeholder="EX-91798..." required>
 
-            <!-- Template Dropdown -->
             <label>Select Template</label>
             <select id="template-select" name="template_id">
                 <option value="">-- Select Template --</option>
                 {% for t in templates %}
-                    <option value="{{ t.id }}" data-content="{{ t.content }}">{{ t.name }}</option>
+                    <option value="{{ t.id }}" data-content="{{ t.content }}">
+                        {{ t.name }}
+                    </option>
                 {% endfor %}
             </select>
 
@@ -84,7 +84,6 @@ tr:hover{background:#f9fafb;}
 
             <button type="submit" class="submit-btn">Send SMS</button>
         </form>
-
         <div id="sms-response" style="margin-top:10px;"></div>
     </div>
 </div>
@@ -126,7 +125,6 @@ tr:hover{background:#f9fafb;}
 <div id="template-section" class="section">
     <div class="card">
         <h3>Templates Manager</h3>
-
         <div class="search-create">
             <form method="POST" id="create-template-form" action="{{ url_for('create_template') }}">
                 <input type="text" name="name" placeholder="Template Name" required>
@@ -189,18 +187,28 @@ tr:hover{background:#f9fafb;}
 </div>
 
 <script>
-// Section toggling
-const sections=document.querySelectorAll(".section");
-const btns=document.querySelectorAll(".toggle-btn");
-btns.forEach(b=>b.addEventListener("click",()=>{
-    sections.forEach(s=>s.style.display="none");
-    document.getElementById(b.dataset.target).style.display="block";
-    btns.forEach(x=>x.classList.remove("active"));
-    b.classList.add("active");
-}));
-document.getElementById("{{ show_section }}").style.display="block";
+// ================== Section toggle & persistence ==================
+const sections = document.querySelectorAll(".section");
+const btns = document.querySelectorAll(".toggle-btn");
 
-// Template search
+function showSection(sectionId) {
+    sections.forEach(s => s.style.display = "none");
+    document.getElementById(sectionId).style.display = "block";
+    btns.forEach(b => b.classList.remove("active"));
+    document.querySelector(`.toggle-btn[data-target="${sectionId}"]`).classList.add("active");
+    localStorage.setItem("activeSection", sectionId);
+}
+
+btns.forEach(b => b.addEventListener("click", () => showSection(b.dataset.target)));
+
+const savedSection = localStorage.getItem("activeSection");
+if(savedSection && document.getElementById(savedSection)){
+    showSection(savedSection);
+} else {
+    showSection("{{ show_section }}");
+}
+
+// ================== Template search ==================
 function filterTemplates(){
     const input = document.getElementById("template-search").value.toLowerCase();
     const table = document.getElementById("template-table");
@@ -210,40 +218,36 @@ function filterTemplates(){
         if (!tds[0]) continue;
         const name = tds[1].innerText.toLowerCase();
         const dltId = tds[2].innerText.toLowerCase();
-        trs[i].style.display = (name.includes(input) || dltId.includes(input)) ? "" : "none";
+        trs[i].style.display = name.includes(input) || dltId.includes(input) ? "" : "none";
     }
 }
 
-// Template edit/delete
-let editId=null;
+// ================== Template update/delete ==================
+let editId = null;
 function editTemplate(id){
-    editId=id;
-    const row=document.getElementById("template-row-"+id);
-    document.getElementById("edit-name").value=row.querySelector(".tpl-name").innerText;
-    document.getElementById("edit-content").value=row.querySelector(".tpl-content").innerText;
-    document.getElementById("edit-modal").style.display="flex";
+    editId = id;
+    const row = document.getElementById("template-row-"+id);
+    document.getElementById("edit-name").value = row.querySelector(".tpl-name").innerText;
+    document.getElementById("edit-content").value = row.querySelector(".tpl-content").innerText;
+    document.getElementById("edit-modal").style.display = "flex";
 }
 function closeModal(){document.getElementById("edit-modal").style.display="none";}
-
-// ✅ Save template & update dropdown
-document.getElementById("save-template-btn").addEventListener("click",()=>{
-    const name=document.getElementById("edit-name").value;
-    const content=document.getElementById("edit-content").value;
+document.getElementById("save-template-btn").addEventListener("click", ()=>{
+    const name = document.getElementById("edit-name").value;
+    const content = document.getElementById("edit-content").value;
     fetch(`/templates/update/${editId}`,{
         method:"POST",
         headers:{"Content-Type":"application/x-www-form-urlencoded","X-Requested-With":"XMLHttpRequest"},
         body:`name=${encodeURIComponent(name)}&content=${encodeURIComponent(content)}`
     }).then(r=>r.json()).then(res=>{
         if(res.status=="success"){
-            const row=document.getElementById("template-row-"+editId);
-            row.querySelector(".tpl-name").innerText=res.name;
-            row.querySelector(".tpl-content").innerText=res.content;
+            const row = document.getElementById("template-row-"+editId);
+            row.querySelector(".tpl-name").innerText = res.name;
+            row.querySelector(".tpl-content").innerText = res.content;
 
-            // Update Send SMS dropdown
-            const smsSelect = document.getElementById("template-select");
-            let option = smsSelect.querySelector(`option[value='${editId}']`);
+            // ✅ Update dropdown in Send SMS immediately
+            const option = document.querySelector(`#template-select option[value="${editId}"]`);
             if(option){
-                option.innerText = res.name;
                 option.setAttribute("data-content", res.content);
             }
 
@@ -252,85 +256,84 @@ document.getElementById("save-template-btn").addEventListener("click",()=>{
         }
     });
 });
-
 function deleteTemplate(id){
     if(!confirm("Are you sure you want to delete this template?")) return;
     fetch(`/templates/delete/${id}`,{method:"POST",headers:{"X-Requested-With":"XMLHttpRequest"}})
-    .then(r=>r.json()).then(res=>{
-        if(res.status=="success"){
-            const row=document.getElementById("template-row-"+id);
-            row.remove();
-            // Remove from dropdown
-            const smsSelect = document.getElementById("template-select");
-            const option = smsSelect.querySelector(`option[value='${id}']`);
-            if(option) option.remove();
-            alert(res.message);
-        }
-    });
+        .then(r=>r.json())
+        .then(res=>{
+            if(res.status=="success"){
+                const row = document.getElementById("template-row-"+id);
+                row.remove();
+                // Remove from dropdown too
+                const option = document.querySelector(`#template-select option[value="${id}"]`);
+                if(option) option.remove();
+                alert(res.message);
+            }
+        });
 }
 
-// AJAX Send SMS
-document.getElementById("sms-form").addEventListener("submit",e=>{
+// ================== Send SMS ==================
+document.getElementById("sms-form").addEventListener("submit", e=>{
     e.preventDefault();
-    const formData=new FormData(e.target);
+    const formData = new FormData(e.target);
     fetch("/send_sms",{method:"POST",body:formData,headers:{"X-Requested-With":"XMLHttpRequest"}})
-    .then(r=>r.json()).then(res=>{
-        document.getElementById("sms-response").innerText=res.message;
-        e.target.reset();
-        // Reset message box
-        document.getElementById("message-box").removeAttribute("readonly");
-        document.getElementById("message-box").style.background="white";
-        document.getElementById("message-box").style.cursor="text";
-    });
+        .then(r=>r.json())
+        .then(res=>{
+            document.getElementById("sms-response").innerText = res.message;
+            e.target.reset();
+        });
 });
 
-// Reports
+// ================== Reports datepicker ==================
 const reportRange = flatpickr("#report-range", {mode:"range", dateFormat:"Y-m-d"});
-document.getElementById("today-btn").addEventListener("click",()=>{
+document.getElementById("today-btn").addEventListener("click", () => {
     let today = new Date();
     reportRange.setDate([today, today]);
 });
-document.getElementById("last7-btn").addEventListener("click",()=>{
-    let d=new Date(); d.setDate(d.getDate()-6);
-    reportRange.setDate([d,new Date()]);
+document.getElementById("last7-btn").addEventListener("click", () => {
+    let d = new Date(); d.setDate(d.getDate()-6);
+    reportRange.setDate([d, new Date()]);
 });
-document.getElementById("month-btn").addEventListener("click",()=>{
-    let now=new Date();
-    reportRange.setDate([new Date(now.getFullYear(),now.getMonth(),1), new Date()]);
+document.getElementById("month-btn").addEventListener("click", () => {
+    let now = new Date();
+    reportRange.setDate([new Date(now.getFullYear(), now.getMonth(), 1), new Date()]);
 });
-document.getElementById("report-search-btn").addEventListener("click",()=>{
-    const range=reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
-    let url="/reports";
-    if(range.length==2) url+="?start="+range[0]+"&end="+range[1];
-    fetch(url,{headers:{"X-Requested-With":"XMLHttpRequest"}})
-        .then(r=>r.text()).then(html=>{document.getElementById("report-table").innerHTML=html;});
+document.getElementById("report-search-btn").addEventListener("click", () => {
+    const range = reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
+    let url = "/reports";
+    if(range.length==2) url += "?start="+range[0]+"&end="+range[1];
+    fetch(url,{headers:{"X-Requested-With":"XMLHttpRequest"}}).then(r=>r.text()).then(html=>{
+        document.getElementById("report-table").innerHTML = html;
+    });
 });
-document.getElementById("report-export-btn").addEventListener("click",()=>{
-    const range=reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
-    let url="/reports?export=1";
-    if(range.length==2) url+="&start="+range[0]+"&end="+range[1];
-    window.location.href=url;
+document.getElementById("report-export-btn").addEventListener("click", ()=>{
+    const range = reportRange.selectedDates.map(d=>d.toISOString().slice(0,10));
+    let url = "/reports?export=1";
+    if(range.length==2) url += "&start="+range[0]+"&end="+range[1];
+    window.location.href = url;
 });
 
-// Template select → fill + lock message
-document.addEventListener("DOMContentLoaded",()=>{
-    const templateDropdown=document.getElementById("template-select");
-    const messageBox=document.getElementById("message-box");
-    templateDropdown.addEventListener("change",function(){
-        const selectedOption=this.options[this.selectedIndex];
-        const content=selectedOption.getAttribute("data-content");
-        if(content && content!=="null"){
-            messageBox.value=content;
-            messageBox.setAttribute("readonly",true);
-            messageBox.style.background="#f3f4f6";
-            messageBox.style.cursor="not-allowed";
-        }else{
-            messageBox.value="";
-            messageBox.removeAttribute("readonly");
-            messageBox.style.background="white";
-            messageBox.style.cursor="text";
-        }
-    });
+// ================== Template select → fill + lock message ==================
+document.addEventListener("DOMContentLoaded", ()=>{
+    const templateDropdown = document.getElementById("template-select");
+    const messageBox = document.getElementById("message-box");
+    if(templateDropdown && messageBox){
+        templateDropdown.addEventListener("change", function(){
+            const selectedOption = this.options[this.selectedIndex];
+            const content = selectedOption.getAttribute("data-content");
+            if(content && content !== "null"){
+                messageBox.value = content;
+                messageBox.setAttribute("readonly", true);
+                messageBox.style.background="#f3f4f6";
+                messageBox.style.cursor="not-allowed";
+            } else {
+                messageBox.value="";
+                messageBox.removeAttribute("readonly");
+                messageBox.style.background="white";
+                messageBox.style.cursor="text";
+            }
+        });
+    }
 });
 </script>
 </body>
