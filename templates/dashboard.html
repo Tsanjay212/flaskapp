@@ -283,6 +283,40 @@ document.getElementById("report-export-btn").addEventListener("click",()=>{
     if(range.length==2) url+="&start="+range[0]+"&end="+range[1];
     window.location.href=url;
 });
+// ✅ Template select → fill + lock message
+document.addEventListener("DOMContentLoaded", function () {
+
+    const templateDropdown = document.getElementById("template-select");
+    const messageBox = document.getElementById("message-box");
+
+    if (templateDropdown && messageBox) {
+
+        templateDropdown.addEventListener("change", function () {
+
+            const selectedOption = this.options[this.selectedIndex];
+            const content = selectedOption.getAttribute("data-content");
+
+            if (content && content !== "null") {
+                // ✅ Fill message
+                messageBox.value = content;
+
+                // ✅ Make NON-editable
+                messageBox.setAttribute("readonly", true);
+                messageBox.style.background = "#f3f4f6";
+                messageBox.style.cursor = "not-allowed";
+            } else {
+                // ✅ Reset if no template selected
+                messageBox.value = "";
+                messageBox.removeAttribute("readonly");
+                messageBox.style.background = "white";
+                messageBox.style.cursor = "text";
+            }
+
+        });
+
+    }
+
+});
 </script>
 </body>
 </html>
