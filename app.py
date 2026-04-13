@@ -77,7 +77,13 @@ def login_required(f):
         if "user_id" not in session:
             return redirect(url_for("login"))
         return f(*args, **kwargs)
-    return wrapper
+    return wrapper 
+def admin_required():
+    """ Check if the user is an admin """
+    if "admin_logged_in" not in session:
+        flash("You need to log in as an admin first.", "danger")
+        return redirect(url_for("admin_login"))
+    return True
 
 def generate_dlt_id():
     """Generate a 10-digit DLT ID starting with 212"""
