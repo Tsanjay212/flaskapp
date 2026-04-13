@@ -11,5 +11,5 @@ services:
       MYSQL_USER: flaskdb
       MYSQL_PASSWORD: Tsanjay212
       MYSQL_DB: sanreach
-      
-       restart: always
+
+    restart: always
