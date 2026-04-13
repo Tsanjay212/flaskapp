@@ -15,9 +15,9 @@ REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "yourRedisPassword")
 
 r = redis.Redis(
-    host=172.31.0.187,
+    host=REDIS_HOST,
     port=6379,
-    password=Tsanjay212,
+    password=REDIS_PASSWORD,
     decode_responses=True
 )
 # ----------------------------
