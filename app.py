@@ -7,25 +7,10 @@ from io import StringIO
 import csv
 import os, requests, socket
 import random, string
-import redis
 
-# ----------------------------
-# Redis Configuration
-# ----------------------------
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "yourRedisPassword")
-
-r = redis.Redis(
-    host=REDIS_HOST,
-    port=6379,
-    password=REDIS_PASSWORD,
-    decode_responses=True
-)
-# ----------------------------
-# Admin Credentials
-# ----------------------------
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "Tsanjay@212"
+
 # ----------------------------
 # App Setup
 # ----------------------------
@@ -48,25 +33,6 @@ def get_db():
         password=DB_PASSWORD,
         database=DB_NAME
     )
-# ----------------------------
-# Redis Credit Management
-# ----------------------------
-def get_credits(user):
-    credits = r.get(f"credits:{user}")
-    return int(credits) if credits else 0
-
-def add_credits(user, amount):
-    return r.incrby(f"credits:{user}", amount)
-
-def set_credits(user, amount):
-    r.set(f"credits:{user}", amount)
-
-def deduct_credit(user, amount=1):
-    current = get_credits(user)
-    if current >= amount:
-        r.decrby(f"credits:{user}", amount)
-        return True
-    return False
 
 # ----------------------------
 # Utilities
@@ -77,19 +43,11 @@ def login_required(f):
         if "user_id" not in session:
             return redirect(url_for("login"))
         return f(*args, **kwargs)
-    return wrapper 
-def admin_required():
-    """ Check if the user is an admin """
-    if "admin_logged_in" not in session:
-        flash("You need to log in as an admin first.", "danger")
-        return redirect(url_for("admin_login"))
-    return True
+    return wrapper
 
 def generate_dlt_id():
     """Generate a 10-digit DLT ID starting with 212"""
     return "212" + "".join(str(random.randint(0, 9)) for _ in range(7))
-
-
 
 # ----------------------------
 # Auth Routes
@@ -186,12 +144,7 @@ def send_sms():
     message_text = request.form.get("message")
     template_id = request.form.get("template_id")
 
-    user = session["username"]
-
-    # Check if the user has enough credits before sending SMS
-    if not deduct_credit(user, 1):
-        return "❌ Not enough credits", 403
-
+    # If template selected, override message safely
     if template_id:
         try:
             conn = get_db()
@@ -239,56 +192,6 @@ def send_sms():
     else:
         flash("SMS Sent!" if status == "Sent" else "SMS Failed", "success")
         return redirect(url_for("dashboard"))
-
-# ----------------------------
-# Admin Routes (Credits Management)
-# ----------------------------
-@app.route("/admin/login", methods=["GET", "POST"])
-def admin_login():
-    # Check if already logged in as admin
-    if "admin_logged_in" in session:
-        return redirect("/admin/dashboard")
-
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            session["admin_logged_in"] = True
-            flash("Admin logged in successfully!", "success")
-            return redirect("/admin/dashboard")
-        else:
-            flash("Invalid credentials. Please try again.", "danger")
-
-    return render_template("admin_login.html")
-
-@app.route("/admin/dashboard")
-def admin_dashboard():
-    if not admin_required():
-        return redirect("/admin/login")
-    return render_template("admin_credits.html")
-
-@app.route("/admin/add_credits", methods=["POST"])
-def admin_add_credits():
-    if not admin_required():
-        return redirect("/admin/login")
-
-    user = request.form["username"]
-    amount = int(request.form["amount"])
-
-    add_credits(user, amount)
-    return f"Added {amount} credits to {user}"
-
-@app.route("/admin/set_credits", methods=["POST"])
-def admin_set_credits():
-    if not admin_required():
-        return redirect("/admin/login")
-
-    user = request.form["username"]
-    amount = int(request.form["amount"])
-
-    set_credits(user, amount)
-    return f"Set {user} credits to {amount}"
 # ----------------------------
 # Reports
 # ----------------------------
