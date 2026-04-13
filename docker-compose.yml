@@ -12,5 +12,7 @@ services:
       MYSQL_USER: flaskdb
       MYSQL_PASSWORD: Tsanjay212
       MYSQL_DB: sanreach
+      REDIS_HOST: 172.16.0.2
+      REDIS_PASSWORD: Tsanjay212
 
     restart: always
