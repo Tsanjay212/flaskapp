@@ -6,12 +6,28 @@ services:
     container_name: flaskapp
     ports:
       - "8000:8000"
-
     environment:
       MYSQL_HOST: flask-mariadb-db.cnwcmsquw4d7.ap-south-2.rds.amazonaws.com
       MYSQL_USER: flaskdb
       MYSQL_PASSWORD: Tsanjay212
       MYSQL_DB: sanreach
-     
+      REDIS_HOST: redis  # This will point to the Redis service below
+      REDIS_PORT: 6379   # Redis default port
+      REDIS_PASSWORD: "Tsanjay212" # If Redis is configured with a password, put it here
+    depends_on:
+      - redis  # Ensure Redis starts before Flask
 
     restart: always
+
+  redis:
+    image: redis:latest  # Official Redis image
+    container_name: redis
+    ports:
+      - "6379:6379"   # Exposing Redis port on host
+    environment:
+      - REDIS_PASSWORD=  # Optional, set password if Redis is configured with one
+    restart: always
+
+networks:
+  default:
+    driver: bridge
