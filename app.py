@@ -7,6 +7,7 @@ from io import StringIO
 import csv
 import os, requests, socket
 import random, string
+import redis
 
 # ----------------------------
 # Redis Configuration
