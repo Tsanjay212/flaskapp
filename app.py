@@ -245,15 +245,20 @@ def send_sms():
 # ----------------------------
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
+    # Check if already logged in as admin
+    if "admin_logged_in" in session:
+        return redirect("/admin/dashboard")
+
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
 
         if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
             session["admin_logged_in"] = True
+            flash("Admin logged in successfully!", "success")
             return redirect("/admin/dashboard")
         else:
-            flash("Invalid credentials", "danger")
+            flash("Invalid credentials. Please try again.", "danger")
 
     return render_template("admin_login.html")
 
