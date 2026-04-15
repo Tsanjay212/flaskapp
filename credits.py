@@ -1,6 +1,6 @@
 import os
 import redis
-from app import get_db
+from db import get_db
 
 # ----------------------------
 # REDIS CONNECTION
