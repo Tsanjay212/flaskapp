@@ -50,6 +50,17 @@ def generate_dlt_id():
     """Generate a 10-digit DLT ID starting with 212"""
     return "212" + "".join(str(random.randint(0, 9)) for _ in range(7))
 
+from functools import wraps
+from flask import abort
+
+def admin_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if session.get("role") != "admin":
+            return abort(403)
+        return f(*args, **kwargs)
+    return wrapper
+
 # ----------------------------
 # Auth Routes
 # ----------------------------
@@ -73,6 +84,7 @@ def login():
         if user and check_password_hash(user["password"], password):
             session["user_id"] = user["id"]
             session["username"] = user["username"]
+            session["role"] = user.get("role", "user")
             return redirect(url_for("dashboard"))
 
         flash("Invalid credentials", "danger")
@@ -135,6 +147,32 @@ def dashboard():
     per_page=5,
     credits=get_credits(session["user_id"])   # ✅ ADD
 )
+# ----------------------------
+# admin
+# ----------------------------
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
+        user = cursor.fetchone()
+
+        if user and check_password_hash(user["password"], password):
+            if user["role"] != "admin":
+                return "Not an admin account", 403
+
+            session["user_id"] = user["id"]
+            session["username"] = user["username"]
+            session["role"] = "admin"
+            return redirect("/admin/credits")
+
+        return "Invalid credentials"
+
+    return render_template("admin_login.html")
 
 # ----------------------------
 # Send SMS

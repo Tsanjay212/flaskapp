@@ -1,6 +1,7 @@
 import redis
 import os
 from flask import Blueprint, render_template, request, session, jsonify
+from app import admin_required  
 
 # ----------------------------
 # REDIS CONNECTION
@@ -42,7 +43,8 @@ credits_bp = Blueprint("credits", __name__)
 
 ADMIN_USERNAME = "admin"
 
-@credits_bp.route("/admin/credits", methods=["GET", "POST"])
+@admin_bp.route("/admin/credits", methods=["GET", "POST"])
+@admin_required
 def admin_credits():
 
     # restrict to admin
@@ -67,7 +69,10 @@ def admin_credits():
         elif action == "get":
             result = get_credits(user_id)
 
-    return render_template("admin_credits.html", result=result)
+    return render_template(
+    "admin_credits.html",
+    result=result
+)
 
 # ----------------------------
 # USER API (LIVE BALANCE)
