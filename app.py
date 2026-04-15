@@ -8,7 +8,7 @@ import csv
 import os, requests, socket
 import random, string
 
-from credits import credits_bp, deduct_credits, get_credits
+from credits import admin_bp, deduct_credits, get_credits
 
 
 # ----------------------------
@@ -18,6 +18,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.register_blueprint(credits_bp)
+app.register_blueprint(admin_bp)
 
 # ----------------------------
 # DB Configuration
