@@ -74,6 +74,9 @@ tr:hover{background:#f9fafb;}
 <div id="send-section" class="section">
     <div class="card">
         <h3>Send SMS</h3>
+        <div style="margin-bottom:10px;">
+    <strong>💰 Credits: <span id="credits">{{ credits }}</span></strong>
+</div>
         <form id="sms-form">
             <label>Recipient Number</label>
             <input type="text" name="number" placeholder="EX-91798..." required>
@@ -314,6 +317,16 @@ document.getElementById("report-export-btn").addEventListener("click",()=>{
     let url="/reports?export=1"; if(range.length==2) url+="&start="+range[0]+"&end="+range[1];
     window.location.href=url;
 });
+function loadCredits(){
+    fetch("/user/credits")
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("credits").innerText = data.credits;
+    });
+}
+
+// refresh every 5 seconds
+setInterval(loadCredits, 5000);
 
 // Template select → fill + lock message
 document.addEventListener("DOMContentLoaded", function(){

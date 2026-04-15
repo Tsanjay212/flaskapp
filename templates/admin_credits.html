@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>💰 Credits Admin</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Arial,sans-serif;}
+body{background:#f4f5f7;color:#333;}
+header{background:#1f2937;color:white;padding:20px;display:flex;justify-content:space-between;align-items:center;position:fixed;top:0;left:0;width:100%;z-index:100;}
+header h1{font-size:22px;font-weight:600;}
+header .user-info{font-size:14px;}
+.sidebar{height:100vh;width:240px;position:fixed;top:0;left:0;background:#253149;padding-top:150px;display:flex;flex-direction:column;}
+.sidebar a{color:white;text-decoration:none;padding:20px;display:block;}
+.sidebar a:hover{background:#374151;}
+.logout-btn{background:#ef4444;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;}
+.main{margin-left:240px;padding:140px 40px;}
+.card{background:white;padding:25px;border-radius:12px;max-width:500px;box-shadow:0 6px 15px rgba(0,0,0,0.08);}
+input,select{width:100%;padding:10px;margin-bottom:12px;border-radius:6px;border:1px solid #d1d5db;}
+button{background:#2563eb;color:white;border:none;padding:10px;border-radius:6px;cursor:pointer;width:100%;}
+button:hover{background:#1d4ed8;}
+.result{margin-top:10px;font-weight:bold;}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+    <h1>💰 Credits Admin</h1>
+    <div class="user-info">
+        Logged in as: <strong>{{ session['username'] }}</strong>
+        <form method="GET" action="{{ url_for('logout') }}" style="display:inline;">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+    </div>
+</header>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+    <a href="/admin/credits">💰 Credits</a>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+    <div class="card">
+        <h3>Manage User Credits</h3>
+
+        <form method="POST">
+            <label>User ID</label>
+            <input type="text" name="user_id" placeholder="Enter User ID" required>
+
+            <label>Amount</label>
+            <input type="number" name="amount" placeholder="Enter Amount">
+
+            <label>Action</label>
+            <select name="action">
+                <option value="get">Get Credits</option>
+                <option value="add">Add Credits</option>
+                <option value="set">Set Credits</option>
+                <option value="delete">Delete Credits</option>
+            </select>
+
+            <button type="submit">Submit</button>
+        </form>
+
+        {% if result is not none %}
+            <div class="result">
+                Result: {{ result }}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>

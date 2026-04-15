@@ -8,8 +8,8 @@ import csv
 import os, requests, socket
 import random, string
 
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "Tsanjay@212"
+from credits import credits_bp, deduct_credits, get_credits
+
 
 # ----------------------------
 # App Setup
@@ -17,6 +17,7 @@ ADMIN_PASSWORD = "Tsanjay@212"
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.register_blueprint(credits_bp)
 
 # ----------------------------
 # DB Configuration
@@ -126,13 +127,14 @@ def dashboard():
     conn.close()
 
     return render_template(
-        "dashboard.html",
-        username=session.get("username"),
-        show_section="send-section",
-        templates=last_templates,
-        total=len(last_templates),
-        per_page=5
-    )
+    "dashboard.html",
+    username=session.get("username"),
+    show_section="send-section",
+    templates=last_templates,
+    total=len(last_templates),
+    per_page=5,
+    credits=get_credits(session["user_id"])   # ✅ ADD
+)
 
 # ----------------------------
 # Send SMS
@@ -158,6 +160,11 @@ def send_sms():
                 message_text = tpl["content"]
         except:
             pass  # fail silently to avoid breaking SMS flow
+    if not deduct_credits(session["user_id"], 1):
+    return jsonify({
+        "status": "Failed",
+        "message": "❌ Insufficient credits"
+    }), 400
 
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
     api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="
