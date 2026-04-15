@@ -1,5 +1,8 @@
 import redis
 import mysql.connector
+import logging
+# Setup logging
+logging.basicConfig(level=logging.DEBUG)
 
 # ----------------------------
 # REDIS CONFIG
