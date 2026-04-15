@@ -1,99 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Admin Credits Panel</title>
-
+<title>Admin Credits</title>
 <style>
-body{font-family:Segoe UI;background:#f4f5f7;margin:0;}
-
-header{
-    background:#1f2937;
-    color:white;
-    padding:15px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-.container{
-    padding:40px;
-}
-
-.card{
-    background:white;
-    padding:25px;
-    border-radius:12px;
-    max-width:500px;
-    margin:auto;
-    box-shadow:0 5px 15px rgba(0,0,0,0.1);
-}
-
-input,select{
-    width:100%;
-    padding:10px;
-    margin:10px 0;
-    border:1px solid #ddd;
-    border-radius:6px;
-}
-
-button{
-    background:#2563eb;
-    color:white;
-    border:none;
-    padding:10px;
-    width:100%;
-    cursor:pointer;
-    border-radius:6px;
-}
-
-button:hover{
-    background:#1d4ed8;
-}
-
-.logout{
-    background:red;
-    padding:8px 12px;
-    border:none;
-    color:white;
-    cursor:pointer;
-}
+body { font-family: Arial; background:#f4f4f4; }
+.container { width:80%; margin:auto; background:white; padding:20px; margin-top:40px; }
+table { width:100%; border-collapse:collapse; }
+th, td { padding:10px; border:1px solid #ddd; }
+button { padding:6px 10px; background:blue; color:white; border:none; }
+.logout { float:right; }
 </style>
 </head>
-
 <body>
 
-<header>
-    <h3>💰 Admin Credits Panel</h3>
-    <form action="/logout">
-        <button class="logout">Logout</button>
-    </form>
-</header>
-
 <div class="container">
+    <h2>Admin Credits Panel</h2>
 
-<div class="card">
-    <h3>Update User Credits</h3>
+    <a href="/logout" class="logout">Logout</a>
 
-    <form method="POST" action="/admin/update-credits">
+    <table>
+        <tr>
+            <th>Username</th>
+            <th>Credits</th>
+            <th>Action</th>
+        </tr>
 
-        <label>User ID</label>
-        <input name="user_id" required placeholder="Enter User ID">
-
-        <label>Credits</label>
-        <input name="credits" required placeholder="Enter Credits">
-
-        <label>Action</label>
-        <select name="action">
-            <option value="set">Set</option>
-            <option value="add">Add</option>
-        </select>
-
-        <button type="submit">Update Credits</button>
-
-    </form>
-</div>
-
+        {% for u in users %}
+        <tr>
+            <form method="POST" action="/admin/credits/update">
+                <td>
+                    {{ u.username }}
+                    <input type="hidden" name="username" value="{{ u.username }}">
+                </td>
+                <td>
+                    <input type="number" name="credits" value="{{ u.credits }}">
+                </td>
+                <td>
+                    <button type="submit">Update</button>
+                </td>
+            </form>
+        </tr>
+        {% endfor %}
+    </table>
 </div>
 
 </body>
