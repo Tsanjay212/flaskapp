@@ -17,7 +17,7 @@ from credits import get_credits, set_credits, add_credits, deduct_credits
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-app.register_blueprint(admin_bp)
+
 
 # ----------------------------
 # DB Configuration
@@ -154,25 +154,35 @@ def dashboard():
 )
 # ----------------------------
 # admin
-# ----------------------------
+# ---------------------------
+@app.route("/admin/credits")
+def admin_credits():
+    if session.get("role") != "admin":
+        return "Unauthorized", 403
+
+    return render_template("admin_credits.html")
+
 from credits import set_credits, add_credits
 
 @app.route("/admin/update-credits", methods=["POST"])
 def update_credits():
+    if session.get("role") != "admin":
+        return "Unauthorized", 403
+
     user_id = request.form.get("user_id")
     credits = int(request.form.get("credits"))
-    action = request.form.get("action")  # set or add
+    action = request.form.get("action")
 
     if action == "add":
-        new_balance = add_credits(user_id, credits)
+        result = add_credits(user_id, credits)
     else:
         set_credits(user_id, credits)
-        new_balance = credits
+        result = credits
 
     return jsonify({
         "status": "success",
         "user_id": user_id,
-        "credits": new_balance
+        "credits": result
     })
 
 # ----------------------------
