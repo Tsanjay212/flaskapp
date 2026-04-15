@@ -8,7 +8,7 @@ import csv
 import os, requests, socket
 import random, string
 
-from credits import admin_bp, deduct_credits, get_credits
+from credits import get_credits, set_credits, add_credits, deduct_credits
 
 
 # ----------------------------
@@ -155,29 +155,25 @@ def dashboard():
 # ----------------------------
 # admin
 # ----------------------------
-@app.route("/admin/login", methods=["GET", "POST"])
-def admin_login():
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
+from credits import set_credits, add_credits
 
-        conn = get_db()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
-        user = cursor.fetchone()
+@app.route("/admin/update-credits", methods=["POST"])
+def update_credits():
+    user_id = request.form.get("user_id")
+    credits = int(request.form.get("credits"))
+    action = request.form.get("action")  # set or add
 
-        if user and check_password_hash(user["password"], password):
-            if user["role"] != "admin":
-                return "Not an admin account", 403
+    if action == "add":
+        new_balance = add_credits(user_id, credits)
+    else:
+        set_credits(user_id, credits)
+        new_balance = credits
 
-            session["user_id"] = user["id"]
-            session["username"] = user["username"]
-            session["role"] = "admin"
-            return redirect("/admin/credits")
-
-        return "Invalid credentials"
-
-    return render_template("admin_login.html")
+    return jsonify({
+        "status": "success",
+        "user_id": user_id,
+        "credits": new_balance
+    })
 
 # ----------------------------
 # Send SMS

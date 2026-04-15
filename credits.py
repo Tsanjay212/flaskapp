@@ -1,102 +1,82 @@
-import os
 import redis
-from functools import wraps
-from flask import session, abort, Blueprint, request, render_template, redirect, url_for, jsonify
+import os
 
 # ----------------------------
-# REDIS CONNECTION
+# Redis Connection
 # ----------------------------
+REDIS_HOST = os.environ.get("REDIS_HOST", "172.31.0.187")
+REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", "Tsanjay212")
+
 redis_client = redis.Redis(
-    host=os.getenv("REDIS_HOST", "172.31.0.187"),
-    port=int(os.getenv("REDIS_PORT", 6379)),
-    password=os.getenv("REDIS_PASSWORD", "Tsanjay212"),
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    password=REDIS_PASSWORD,
     decode_responses=True
 )
 
 # ----------------------------
-# ADMIN DECORATOR (NO CIRCULAR IMPORT)
+# CORE FUNCTIONS
 # ----------------------------
-def admin_required(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if session.get("role") != "admin":
-            return abort(403)
-        return f(*args, **kwargs)
-    return wrapper
 
-
-# ----------------------------
-# CREDIT FUNCTIONS
-# ----------------------------
 def get_credits(user_id):
+    """
+    Get user credits from Redis
+    """
     try:
         val = redis_client.get(f"user:{user_id}:credits")
         return int(val) if val else 0
-    except:
+    except Exception as e:
+        print("Redis get_credits error:", e)
         return 0
 
 
-def set_credits(user_id, amount):
-    redis_client.set(f"user:{user_id}:credits", int(amount))
-
-
-def add_credits(user_id, amount):
-    redis_client.incrby(f"user:{user_id}:credits", int(amount))
-
-
-def deduct_credits(user_id, amount=1):
+def set_credits(user_id, credits):
+    """
+    Set absolute credits (Admin use)
+    """
     try:
-        key = f"user:{user_id}:credits"
-        current = redis_client.get(key)
-
-        current = int(current) if current else 0
-
-        if current < amount:
-            return False
-
-        redis_client.decrby(key, amount)
+        redis_client.set(f"user:{user_id}:credits", int(credits))
         return True
-    except:
+    except Exception as e:
+        print("Redis set_credits error:", e)
         return False
 
 
-def delete_credits(user_id):
-    redis_client.delete(f"user:{user_id}:credits")
+def add_credits(user_id, credits):
+    """
+    Add credits to existing balance
+    """
+    try:
+        key = f"user:{user_id}:credits"
+        current = redis_client.get(key)
+        current = int(current) if current else 0
+
+        new_balance = current + int(credits)
+        redis_client.set(key, new_balance)
+        return new_balance
+    except Exception as e:
+        print("Redis add_credits error:", e)
+        return 0
 
 
-# ----------------------------
-# ADMIN UI (OPTIONAL ROUTES)
-# ----------------------------
-admin_bp = Blueprint("admin_bp", __name__)
+def deduct_credits(user_id, credits=1):
+    """
+    Deduct credits before sending SMS
+    Returns True if successful, False if insufficient credits
+    """
+    try:
+        key = f"user:{user_id}:credits"
+        current = redis_client.get(key)
+        current = int(current) if current else 0
 
+        if current < credits:
+            return False
 
-@admin_bp.route("/admin/credits", methods=["GET", "POST"])
-@admin_required
-def admin_credits():
-    result = None
+        new_balance = current - credits
+        redis_client.set(key, new_balance)
+        return True
 
-    if request.method == "POST":
-        user_id = request.form.get("user_id")
-        amount = request.form.get("amount")
-        action = request.form.get("action")
-
-        try:
-            if action == "get":
-                result = get_credits(user_id)
-
-            elif action == "add":
-                add_credits(user_id, int(amount))
-                result = "Credits Added"
-
-            elif action == "set":
-                set_credits(user_id, int(amount))
-                result = "Credits Set"
-
-            elif action == "delete":
-                delete_credits(user_id)
-                result = "Credits Deleted"
-
-        except Exception as e:
-            result = str(e)
-
-    return render_template("admin_credits.html", result=result)
+    except Exception as e:
+        print("Redis deduct_credits error:", e)
+        return False
