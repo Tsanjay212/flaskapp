@@ -1,70 +1,91 @@
-import redis
 import os
+import redis
+from app import get_db
 
 # ----------------------------
-# Redis Connection
+# REDIS CONNECTION
 # ----------------------------
-REDIS_HOST = os.environ.get("REDIS_HOST", "172.31.0.187")
-REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
-REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", "Tsanjay212")
-
 redis_client = redis.Redis(
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    password=REDIS_PASSWORD,
-    decode_responses=True,
-    socket_connect_timeout=5,
-    socket_timeout=5
+    host=os.environ.get("REDIS_HOST", "172.31.0.187"),
+    port=6379,
+    password=os.environ.get("REDIS_PASSWORD", "yourpassword"),
+    decode_responses=True
 )
 
 # ----------------------------
-# CORE FUNCTIONS
+# GET CREDITS
 # ----------------------------
+def get_credits(username):
+    key = f"credits:{username}"
 
-def get_credits(user_id):
-    try:
-        val = redis_client.get(f"user:{user_id}:credits")
-        return int(val) if val else 0
-    except Exception as e:
-        print("get_credits error:", e)
-        return 0
+    val = redis_client.get(key)
+
+    if val is None:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute(
+            "SELECT credits FROM users WHERE username=%s",
+            (username,)
+        )
+        row = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if row:
+            val = row["credits"]
+            redis_client.set(key, val)
+
+    return int(val or 0)
 
 
-def set_credits(user_id, credits):
-    try:
-        redis_client.set(f"user:{user_id}:credits", int(credits))
-        return True
-    except Exception as e:
-        print("set_credits error:", e)
+# ----------------------------
+# SET CREDITS (ADMIN)
+# ----------------------------
+def set_credits(username, credits):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE users SET credits=%s WHERE username=%s",
+        (credits, username)
+    )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    redis_client.set(f"credits:{username}", int(credits))
+
+
+# ----------------------------
+# DEDUCT CREDITS (SMS FLOW)
+# ----------------------------
+def deduct_credits(username, amount=1):
+    current = get_credits(username)
+
+    if current < amount:
         return False
 
+    new_value = current - amount
+    set_credits(username, new_value)
 
-def add_credits(user_id, credits):
-    try:
-        key = f"user:{user_id}:credits"
-        current = redis_client.get(key)
-        current = int(current) if current else 0
-
-        new_val = current + int(credits)
-        redis_client.set(key, new_val)
-        return new_val
-    except Exception as e:
-        print("add_credits error:", e)
-        return 0
+    return True
 
 
-def deduct_credits(user_id, credits=1):
-    try:
-        key = f"user:{user_id}:credits"
-        current = redis_client.get(key)
-        current = int(current) if current else 0
+# ----------------------------
+# SYNC ALL USERS (OPTIONAL ADMIN TOOL)
+# ----------------------------
+def sync_all_users():
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
 
-        if current < credits:
-            return False
+    cursor.execute("SELECT username, credits FROM users")
+    users = cursor.fetchall()
 
-        redis_client.set(key, current - credits)
-        return True
+    cursor.close()
+    conn.close()
 
-    except Exception as e:
-        print("deduct_credits error:", e)
-        return False
+    for u in users:
+        redis_client.set(f"credits:{u['username']}", u["credits"])

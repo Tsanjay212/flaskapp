@@ -8,7 +8,7 @@ import csv
 import os, requests, socket
 import random, string
 
-from credits import get_credits, set_credits, add_credits, deduct_credits
+from credits import get_credits, deduct_credits
 
 
 # ----------------------------
@@ -150,7 +150,7 @@ def dashboard():
     templates=last_templates,
     total=len(last_templates),
     per_page=5,
-    credits=get_credits(session["user_id"])   # ✅ ADD
+    credits=get_credits(session["username"])   # ✅ ADD THIS
 )
 # ----------------------------
 # admin
@@ -195,29 +195,42 @@ def send_sms():
     message_text = request.form.get("message")
     template_id = request.form.get("template_id")
 
-    # If template selected, override message safely
+    # ✅ USE USERNAME (IMPORTANT FIX)
+    username = session["username"]
+
+    # ----------------------------
+    # Template override
+    # ----------------------------
     if template_id:
         try:
             conn = get_db()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT content FROM templates WHERE id=%s", (template_id,))
+            cursor.execute(
+                "SELECT content FROM templates WHERE id=%s",
+                (template_id,)
+            )
             tpl = cursor.fetchone()
             cursor.close()
             conn.close()
 
             if tpl and tpl.get("content"):
                 message_text = tpl["content"]
-        except:
+
+        except Exception:
             pass
 
-    # ✅ CHECK CREDITS (INSIDE FUNCTION)
-    if not deduct_credits(session["user_id"], 1):
+    # ----------------------------
+    # ✅ CHECK CREDITS FIRST (IMPORTANT FIX)
+    # ----------------------------
+    if not deduct_credits(username, 1):
         return jsonify({
             "status": "Failed",
             "message": "❌ Insufficient credits"
         })
 
-    # ✅ CONTINUE NORMAL FLOW
+    # ----------------------------
+    # SEND SMS API
+    # ----------------------------
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
     api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="
 
@@ -225,10 +238,17 @@ def send_sms():
         "ver": "1.0",
         "key": api_key,
         "encrypt": "0",
-        "messages": [{"dest": [number], "text": message_text, "send": "KARIXM"}]
+        "messages": [
+            {
+                "dest": [number],
+                "text": message_text,
+                "send": "KARIXM"
+            }
+        ]
     }
 
     status = "Failed"
+
     try:
         r = requests.post(api_url, json=payload)
         if r.status_code == 200:
@@ -236,21 +256,32 @@ def send_sms():
     except Exception as e:
         status = str(e)
 
+    # ----------------------------
+    # LOG SMS IN MYSQL
+    # ----------------------------
     conn = get_db()
     cursor = conn.cursor()
+
     cursor.execute(
         "INSERT INTO sms_logs (user_id, dest, message, status) VALUES (%s,%s,%s,%s)",
         (session["user_id"], number, message_text, status)
     )
+
     conn.commit()
     cursor.close()
     conn.close()
 
+    # ----------------------------
+    # RESPONSE
+    # ----------------------------
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"status": status, "message": f"SMS {status} to {number}"})
-    else:
-        flash("SMS Sent!" if status == "Sent" else "SMS Failed", "success")
-        return redirect(url_for("dashboard"))
+        return jsonify({
+            "status": status,
+            "message": f"SMS {status} to {number}"
+        })
+
+    flash("SMS Sent!" if status == "Sent" else "SMS Failed", "success")
+    return redirect(url_for("dashboard"))
 # ----------------------------
 # Reports
 # ----------------------------
