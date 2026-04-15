@@ -159,13 +159,16 @@ def send_sms():
             if tpl and tpl.get("content"):
                 message_text = tpl["content"]
         except:
-            pass  # fail silently to avoid breaking SMS flow
-    if not deduct_credits(session["user_id"], 1):
-    return jsonify({
-        "status": "Failed",
-        "message": "❌ Insufficient credits"
-    }), 400
+            pass
 
+    # ✅ CHECK CREDITS (INSIDE FUNCTION)
+    if not deduct_credits(session["user_id"], 1):
+        return jsonify({
+            "status": "Failed",
+            "message": "❌ Insufficient credits"
+        })
+
+    # ✅ CONTINUE NORMAL FLOW
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
     api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="
 
