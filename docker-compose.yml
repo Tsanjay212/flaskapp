@@ -12,7 +12,7 @@ services:
       MYSQL_PASSWORD: Tsanjay212
       MYSQL_DB: sanreach
   
-      REDIS_HOST: 172-31-0-187
+      REDIS_HOST: 172.31.0.187
       REDIS_PORT: 6379
       REDIS_PASSWORD: Tsanjay212
 
