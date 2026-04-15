@@ -88,7 +88,7 @@ def login():
 
             # 🔥 ROLE BASED REDIRECT
             if user["role"] == "admin":
-                return redirect(url_for("admin_bp.admin_credits"))
+                return redirect(url_for("admin_credits"))
 
             return redirect(url_for("dashboard"))
 
