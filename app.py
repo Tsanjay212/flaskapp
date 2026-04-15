@@ -85,6 +85,11 @@ def login():
             session["user_id"] = user["id"]
             session["username"] = user["username"]
             session["role"] = user.get("role", "user")
+
+            # 🔥 ROLE BASED REDIRECT
+            if user["role"] == "admin":
+                return redirect(url_for("admin_bp.admin_credits"))
+
             return redirect(url_for("dashboard"))
 
         flash("Invalid credentials", "danger")
