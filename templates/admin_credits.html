@@ -1,48 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Admin Credits</title>
-<style>
-body { font-family: Arial; background:#f4f4f4; }
-.container { width:80%; margin:auto; background:white; padding:20px; margin-top:40px; }
-table { width:100%; border-collapse:collapse; }
-th, td { padding:10px; border:1px solid #ddd; }
-button { padding:6px 10px; background:blue; color:white; border:none; }
-.logout { float:right; }
-</style>
-</head>
-<body>
-
-<div class="container">
-    <h2>Admin Credits Panel</h2>
-
-    <a href="/logout" class="logout">Logout</a>
-
-    <table>
+<h1>Manage User Credits</h1>
+<table>
+    <thead>
         <tr>
+            <th>User ID</th>
             <th>Username</th>
             <th>Credits</th>
             <th>Action</th>
         </tr>
-
-        {% for u in users %}
+    </thead>
+    <tbody>
+        {% for user in users %}
         <tr>
-            <form method="POST" action="/admin/credits/update">
-                <td>
-                    {{ u.username }}
-                    <input type="hidden" name="username" value="{{ u.username }}">
-                </td>
-                <td>
-                    <input type="number" name="credits" value="{{ u.credits }}">
-                </td>
-                <td>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.credits }}</td>
+            <td>
+                <form method="POST">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <input type="number" name="credits" required>
+                    <select name="action" required>
+                        <option value="add">Add</option>
+                        <option value="set">Set</option>
+                        <option value="deduct">Deduct</option>
+                    </select>
                     <button type="submit">Update</button>
-                </td>
-            </form>
+                </form>
+            </td>
         </tr>
         {% endfor %}
-    </table>
-</div>
-
-</body>
-</html>
+    </tbody>
+</table>

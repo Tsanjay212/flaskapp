@@ -8,8 +8,7 @@ import csv
 import os, requests, socket
 import random, string
 
-from credits import get_credits, deduct_credits
-from db import get_db
+from credits import get_credits, set_credits, add_credits, deduct_credits
 
 
 # ----------------------------
@@ -135,7 +134,7 @@ def dashboard():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
-    # Only fetch templates for the logged-in user
+    # Fetch templates for the logged-in user
     cursor.execute(
         "SELECT * FROM templates WHERE user_id=%s ORDER BY id DESC LIMIT 5",
         (session["user_id"],)
@@ -144,47 +143,48 @@ def dashboard():
     cursor.close()
     conn.close()
 
+    # Get user's credits
+    credits = get_credits(session["user_id"])
+
     return render_template(
-    "dashboard.html",
-    username=session.get("username"),
-    show_section="send-section",
-    templates=last_templates,
-    total=len(last_templates),
-    per_page=5,
-    credits=get_credits(session["username"])   # ✅ ADD THIS
-)
+        "dashboard.html",
+        username=session.get("username"),
+        show_section="send-section",
+        templates=last_templates,
+        total=len(last_templates),
+        per_page=5,
+        credits=credits  # Pass the credits to the template
+    )
 # ----------------------------
 # admin
 # ---------------------------
-@app.route("/admin/credits")
+# Admin Route: Manage Credits
+@app.route("/admin/credits", methods=["GET", "POST"])
 def admin_credits():
     if session.get("role") != "admin":
         return "Unauthorized", 403
 
-    return render_template("admin_credits.html")
+    if request.method == "POST":
+        user_id = request.form.get("user_id")
+        credits = int(request.form.get("credits"))
+        action = request.form.get("action")
 
-from credits import set_credits, add_credits
+        if action == "add":
+            add_credits(user_id, credits)
+        elif action == "set":
+            set_credits(user_id, credits)
+        elif action == "deduct":
+            deduct_credits(user_id, credits)
 
-@app.route("/admin/update-credits", methods=["POST"])
-def update_credits():
-    if session.get("role") != "admin":
-        return "Unauthorized", 403
+    # Fetch all users' credits for admin display
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, username, credits FROM users")
+    users = cursor.fetchall()
+    cursor.close()
+    conn.close()
 
-    user_id = request.form.get("user_id")
-    credits = int(request.form.get("credits"))
-    action = request.form.get("action")
-
-    if action == "add":
-        result = add_credits(user_id, credits)
-    else:
-        set_credits(user_id, credits)
-        result = credits
-
-    return jsonify({
-        "status": "success",
-        "user_id": user_id,
-        "credits": result
-    })
+    return render_template("admin_credits.html", users=users)
 
 # ----------------------------
 # Send SMS
@@ -196,42 +196,14 @@ def send_sms():
     message_text = request.form.get("message")
     template_id = request.form.get("template_id")
 
-    # ✅ USE USERNAME (IMPORTANT FIX)
-    username = session["username"]
-
-    # ----------------------------
-    # Template override
-    # ----------------------------
-    if template_id:
-        try:
-            conn = get_db()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute(
-                "SELECT content FROM templates WHERE id=%s",
-                (template_id,)
-            )
-            tpl = cursor.fetchone()
-            cursor.close()
-            conn.close()
-
-            if tpl and tpl.get("content"):
-                message_text = tpl["content"]
-
-        except Exception:
-            pass
-
-    # ----------------------------
-    # ✅ CHECK CREDITS FIRST (IMPORTANT FIX)
-    # ----------------------------
-    if not deduct_credits(username, 1):
+    # Check if user has enough credits
+    if not deduct_credits(session["user_id"], 1):  # Deduct 1 credit per SMS
         return jsonify({
             "status": "Failed",
             "message": "❌ Insufficient credits"
         })
 
-    # ----------------------------
-    # SEND SMS API
-    # ----------------------------
+    # Send SMS API Logic (same as before)
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
     api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="
 
@@ -249,7 +221,6 @@ def send_sms():
     }
 
     status = "Failed"
-
     try:
         r = requests.post(api_url, json=payload)
         if r.status_code == 200:
@@ -257,32 +228,21 @@ def send_sms():
     except Exception as e:
         status = str(e)
 
-    # ----------------------------
-    # LOG SMS IN MYSQL
-    # ----------------------------
+    # Log the SMS into the database
     conn = get_db()
     cursor = conn.cursor()
-
     cursor.execute(
         "INSERT INTO sms_logs (user_id, dest, message, status) VALUES (%s,%s,%s,%s)",
         (session["user_id"], number, message_text, status)
     )
-
     conn.commit()
     cursor.close()
     conn.close()
 
-    # ----------------------------
-    # RESPONSE
-    # ----------------------------
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({
-            "status": status,
-            "message": f"SMS {status} to {number}"
-        })
-
-    flash("SMS Sent!" if status == "Sent" else "SMS Failed", "success")
-    return redirect(url_for("dashboard"))
+    return jsonify({
+        "status": status,
+        "message": f"SMS {status} to {number}"
+    })
 # ----------------------------
 # Reports
 # ----------------------------

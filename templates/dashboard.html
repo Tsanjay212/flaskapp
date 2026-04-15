@@ -75,8 +75,8 @@ tr:hover{background:#f9fafb;}
     <div class="card">
         <h3>Send SMS</h3>
         <div style="margin-bottom:10px;">
-    <strong>💰 Credits: <span id="credits">{{ credits }}</span></strong>
-</div>
+            <strong>💰 Credits: <span id="credits">{{ credits }}</span></strong>
+        </div>
         <form id="sms-form">
             <label>Recipient Number</label>
             <input type="text" name="number" placeholder="EX-91798..." required>
@@ -96,6 +96,7 @@ tr:hover{background:#f9fafb;}
 
             <button type="submit" class="submit-btn">Send SMS</button>
         </form>
+
         <div id="sms-response" style="margin-top:10px;"></div>
     </div>
 </div>
@@ -199,6 +200,7 @@ tr:hover{background:#f9fafb;}
 </div>
 
 <script>
+
 // Section toggle with persistence
 const sections = document.querySelectorAll(".section");
 const btns = document.querySelectorAll(".toggle-btn");
@@ -350,6 +352,41 @@ document.addEventListener("DOMContentLoaded", function(){
         });
     }
 });
+    document.getElementById("sms-form").addEventListener("submit", function(event) {
+        event.preventDefault();  // Prevent default form submission
+
+        const credits = parseInt(document.getElementById("credits").textContent.trim());
+        const requiredCredits = 1;  // Assuming each SMS costs 1 credit
+
+        if (credits < requiredCredits) {
+            document.getElementById("sms-response").textContent = "❌ Insufficient credits to send SMS.";
+            document.getElementById("sms-response").style.color = "red";
+            return;  // Stop the submission if not enough credits
+        }
+
+        // If credits are sufficient, proceed with the SMS sending
+        const formData = new FormData(this);
+
+        // Send AJAX request to send SMS
+        fetch("/send_sms", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "Sent") {
+                document.getElementById("sms-response").textContent = "✅ SMS sent successfully!";
+                document.getElementById("sms-response").style.color = "green";
+            } else {
+                document.getElementById("sms-response").textContent = "❌ SMS failed to send.";
+                document.getElementById("sms-response").style.color = "red";
+            }
+        })
+        .catch(error => {
+            document.getElementById("sms-response").textContent = "❌ An error occurred.";
+            document.getElementById("sms-response").style.color = "red";
+        });
+    });
 </script>
 </body>
 </html>
