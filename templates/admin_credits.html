@@ -1,32 +1,103 @@
-<h1>Manage User Credits</h1>
-<table>
-    <thead>
-        <tr>
-            <th>User ID</th>
-            <th>Username</th>
-            <th>Credits</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in users %}
-        <tr>
-            <td>{{ user.id }}</td>
-            <td>{{ user.username }}</td>
-            <td>{{ user.credits }}</td>
-            <td>
-                <form method="POST">
-                    <input type="hidden" name="user_id" value="{{ user.id }}">
-                    <input type="number" name="credits" required>
-                    <select name="action" required>
-                        <option value="add">Add</option>
-                        <option value="set">Set</option>
-                        <option value="deduct">Deduct</option>
-                    </select>
-                    <button type="submit">Update</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🚀 Manage User Credits</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", Arial, sans-serif; }
+        body { background: #f4f5f7; color: #333; }
+        header { background: #1f2937; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; }
+        header h1 { font-size: 22px; font-weight: 600; }
+        header .user-info { font-size: 14px; }
+        .logout-btn { background: #ef4444; color: white; font-weight: 600; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; margin: 20px; transition: 0.2s; }
+        .logout-btn:hover { background: #dc2626; }
+        .main { margin-left: 0; padding: 140px 40px 40px 40px; }
+        .card { background: white; padding: 25px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08); transition: 0.3s; }
+        .card:hover { box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12); }
+        h2, h3, h4 { margin-top: 0; margin-bottom: 15px; }
+        input, textarea, select { width: 100%; padding: 10px 12px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 14px; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #2563eb; }
+        button { background: #2563eb; color: white; font-weight: 600; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #1d4ed8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        thead { background: #f3f4f6; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        tr:hover { background: #f9fafb; }
+        .section { display: block; }
+        .preset-btn { background: #e5e7eb; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .preset-btn:hover, .preset-btn.active { background: #2563eb; color: white; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🚀 Manage User Credits</h1>
+    <div class="user-info">
+        Logged in as: <strong>{{ username }}</strong>
+        <form method="GET" action="{{ url_for('logout') }}" style="display:inline;">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+    </div>
+</header>
+
+<div class="main">
+
+    <!-- Manage User Credits Section -->
+    <div id="manage-credits-section" class="section">
+        <div class="card">
+            <h3>Manage User Credits</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Username</th>
+                        <th>Credits</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.credits }}</td>
+                        <td>
+                            <form method="POST">
+                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                <input type="number" name="credits" required>
+                                <select name="action" required>
+                                    <option value="add">Add</option>
+                                    <option value="set">Set</option>
+                                    <option value="deduct">Deduct</option>
+                                </select>
+                                <button type="submit">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Script for section toggle -->
+<script>
+// Section toggle with persistence
+document.addEventListener("DOMContentLoaded", function () {
+    const savedTab = localStorage.getItem("activeTab");
+
+    if (savedTab && document.getElementById(savedTab)) {
+        document.getElementById(savedTab).style.display = "block";
+    } else {
+        // fallback to server value
+        document.getElementById("manage-credits-section").style.display = "block";
+    }
+});
+</script>
+
+</body>
+</html>
