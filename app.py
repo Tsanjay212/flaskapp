@@ -156,6 +156,12 @@ def dashboard():
         per_page=5,
         credits=credits  # Pass the credits to the template
     )
+@app.route("/api/credits")
+@login_required
+def api_credits():
+    credits = get_credits(session["user_id"])
+    return jsonify({"credits": credits})
+
 # ----------------------------
 # admin
 # ---------------------------

@@ -287,16 +287,7 @@ function deleteTemplate(id){
     });
 }
 
-// AJAX Send SMS
-document.getElementById("sms-form").addEventListener("submit",e=>{
-    e.preventDefault();
-    const formData=new FormData(e.target);
-    fetch("/send_sms",{method:"POST",body:formData,headers:{"X-Requested-With":"XMLHttpRequest"}})
-    .then(r=>r.json()).then(res=>{
-        document.getElementById("sms-response").innerText=res.message;
-        e.target.reset();
-    });
-});
+
 
 // Reports Datepicker & Presets
 const reportRange=flatpickr("#report-range",{mode:"range",dateFormat:"Y-m-d"});
@@ -319,16 +310,22 @@ document.getElementById("report-export-btn").addEventListener("click",()=>{
     let url="/reports?export=1"; if(range.length==2) url+="&start="+range[0]+"&end="+range[1];
     window.location.href=url;
 });
-function loadCredits(){
-    fetch("/user/credits")
-    .then(res => res.json())
-    .then(data => {
+
+async function updateCredits() {
+    try {
+        const res = await fetch("/api/credits");
+        const data = await res.json();
         document.getElementById("credits").innerText = data.credits;
-    });
+    } catch (e) {
+        console.log("Credits fetch failed");
+    }
 }
 
-// refresh every 5 seconds
-setInterval(loadCredits, 5000);
+// run immediately
+updateCredits();
+
+// refresh every 3 seconds
+setInterval(updateCredits, 3000);
 
 // Template select → fill + lock message
 document.addEventListener("DOMContentLoaded", function(){
@@ -352,41 +349,42 @@ document.addEventListener("DOMContentLoaded", function(){
         });
     }
 });
-    document.getElementById("sms-form").addEventListener("submit", function(event) {
-        event.preventDefault();  // Prevent default form submission
+document.getElementById("sms-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
 
-        const credits = parseInt(document.getElementById("credits").textContent.trim());
-        const requiredCredits = 1;  // Assuming each SMS costs 1 credit
+    const credits = parseInt(document.getElementById("credits").textContent.trim());
+    const requiredCredits = 1;
 
-        if (credits < requiredCredits) {
-            document.getElementById("sms-response").textContent = "❌ Insufficient credits to send SMS.";
-            document.getElementById("sms-response").style.color = "red";
-            return;  // Stop the submission if not enough credits
-        }
+    if (credits < requiredCredits) {
+        document.getElementById("sms-response").textContent = "❌ Insufficient credits";
+        document.getElementById("sms-response").style.color = "red";
+        return;
+    }
 
-        // If credits are sufficient, proceed with the SMS sending
-        const formData = new FormData(this);
+    const formData = new FormData(this);
 
-        // Send AJAX request to send SMS
-        fetch("/send_sms", {
+    try {
+        const response = await fetch("/send_sms", {
             method: "POST",
             body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "Sent") {
-                document.getElementById("sms-response").textContent = "✅ SMS sent successfully!";
-                document.getElementById("sms-response").style.color = "green";
-            } else {
-                document.getElementById("sms-response").textContent = "❌ SMS failed to send.";
-                document.getElementById("sms-response").style.color = "red";
-            }
-        })
-        .catch(error => {
-            document.getElementById("sms-response").textContent = "❌ An error occurred.";
-            document.getElementById("sms-response").style.color = "red";
         });
-    });
+
+        const data = await response.json();
+
+        document.getElementById("sms-response").textContent = data.message;
+        document.getElementById("sms-response").style.color =
+            data.status === "Sent" ? "green" : "red";
+
+        // 🔥 update credits immediately after send
+        updateCredits();
+
+        this.reset();
+
+    } catch (error) {
+        document.getElementById("sms-response").textContent = "❌ Error sending SMS";
+        document.getElementById("sms-response").style.color = "red";
+    }
+});
 </script>
 </body>
 </html>
