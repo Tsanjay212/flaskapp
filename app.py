@@ -10,6 +10,8 @@ import random, string
 
 from credits import get_credits, set_credits, add_credits, deduct_credits
 
+from flask_session import Session
+import redis
 
 
 # ----------------------------
@@ -18,6 +20,22 @@ from credits import get_credits, set_credits, add_credits, deduct_credits
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+# ----------------------------
+# REDIS SESSION CONFIG
+# ----------------------------
+app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_USE_SIGNER"] = True
+
+app.config["SESSION_REDIS"] = redis.StrictRedis(
+    host=os.environ.get("REDIS_HOST"),
+    port=int(os.environ.get("REDIS_PORT", 6379)),
+    password=os.environ.get("REDIS_PASSWORD"),
+    decode_responses=True
+)
+
+Session(app)
 
 
 # ----------------------------
