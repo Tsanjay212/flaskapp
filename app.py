@@ -8,10 +8,8 @@ import csv
 import os, requests, socket
 import random, string
 
-<<<<<<< HEAD
 from credits import get_credits, set_credits, add_credits, deduct_credits
-=======
->>>>>>> d7a6324 (Updating-UI-15-0)
+
 
 
 # ----------------------------
