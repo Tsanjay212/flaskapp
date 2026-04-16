@@ -27,12 +27,14 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config["SESSION_TYPE"] = "redis"
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_USE_SIGNER"] = True
+app.config["SESSION_KEY_PREFIX"] = "session:"
+app.config["SESSION_COOKIE_NAME"] = "session"
 
 app.config["SESSION_REDIS"] = redis.StrictRedis(
     host=os.environ.get("REDIS_HOST"),
     port=int(os.environ.get("REDIS_PORT", 6379)),
     password=os.environ.get("REDIS_PASSWORD"),
-    decode_responses=True
+    decode_responses=True   # 🔥 CRITICAL FIX
 )
 
 Session(app)
