@@ -22,20 +22,24 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 
+
 # ----------------------------
-# REDIS SESSION CONFIG
+# REDIS SESSION CONFIG (FINAL FIX)
 # ----------------------------
 app.config["SESSION_TYPE"] = "redis"
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_USE_SIGNER"] = True
 app.config["SESSION_KEY_PREFIX"] = "session:"
 
-# 🔥 IMPORTANT FIX (NO decode_responses here)
+app.config["SESSION_COOKIE_NAME"] = "session"
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = False  # True in HTTPS only
+
 app.config["SESSION_REDIS"] = redis.StrictRedis(
     host=os.environ.get("REDIS_HOST"),
     port=int(os.environ.get("REDIS_PORT", 6379)),
     password=os.environ.get("REDIS_PASSWORD"),
-    decode_responses=False  # 🔥 MUST BE FALSE for Flask-Session stability
+    decode_responses=False
 )
 
 Session(app)
