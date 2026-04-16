@@ -190,7 +190,7 @@ def api_credits():
 # ----------------------------
 # admin
 # ---------------------------
-# Admin Route: Manage Credits
+
 @app.route("/admin/credits", methods=["GET", "POST"])
 def admin_credits():
     if session.get("role") != "admin":
@@ -208,7 +208,6 @@ def admin_credits():
         elif action == "deduct":
             deduct_credits(user_id, credits)
 
-    # Fetch all users' credits for admin display
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT id, username, credits FROM users")
@@ -216,7 +215,11 @@ def admin_credits():
     cursor.close()
     conn.close()
 
-    return render_template("admin_credits.html", users=users)
+    return render_template(
+        "admin_credits.html",
+        users=users,
+        username=session.get("username")   # ✅ FIX
+    )
 
 # ----------------------------
 # Send SMS
