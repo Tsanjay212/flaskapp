@@ -240,7 +240,7 @@ def send_sms():
 
     # Send SMS API Logic (same as before)
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
-    api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="
+    api_key = "A8CtOgAdEUfuWjFLlvwAOQ"
 
     payload = {
         "ver": "1.0",
