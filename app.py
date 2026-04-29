@@ -21,6 +21,9 @@ import os  # You missed importing the os module
 # Log file path (inside the container)
 log_file = '/opt/flaskapp/logs/flaskapp.log'
 
+# Ensure the log directory exists (ignore if already exists)
+os.makedirs('/opt/flaskapp/logs/', exist_ok=True)
+
 # Ensure the log directory exists
 if not os.path.exists('/opt/flaskapp/logs/'):
     os.makedirs('/opt/flaskapp/logs/')
