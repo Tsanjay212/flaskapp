@@ -19,14 +19,6 @@ services:
       # 🔥 IMPORTANT: stable session key
       FLASK_SECRET_KEY: "supersecretkey"
 
-    volumes:
-      - ./logs:/opt/flaskapp/logs  # Mount logs directory from the host to the container
-      - .:/app  # Mount the current directory to /app in the container, useful for development
-
-    logging:
-      driver: "json-file"  # Docker's default logging driver (can be changed based on your preference)
-      options:
-        max-size: "10m"  # Max size of log file before it's rotated (optional)
-        max-file: "3"    # Number of log files to keep (optional)
+  
 
     restart: always

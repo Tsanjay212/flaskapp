@@ -13,36 +13,7 @@ from credits import get_credits, set_credits, add_credits, deduct_credits
 from flask_session import Session
 import redis
 
-#---------------------------
-import logging
-import sys
-import os
 
-# Log file path (inside the container)
-log_file = '/opt/flaskapp/logs/flaskapp.log'
-
-# Ensure the log directory exists
-if not os.path.exists('/opt/flaskapp/logs/'):
-    os.makedirs('/opt/flaskapp/logs/')
-
-# Set up logging to write to both stdout (for Docker) and file
-logging.basicConfig(
-    level=logging.DEBUG,  # Set the logging level to DEBUG for detailed logging
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),  # Log to stdout (for Docker)
-        logging.FileHandler(log_file)  # Log to file inside the container
-    ]
-)
-
-# Use Flask's built-in logger to ensure all application logs are captured
-app.logger.setLevel(logging.DEBUG)
-
-# Example route with a log entry
-@app.route("/")
-def home():
-    app.logger.debug("Home route accessed")
-    return redirect(url_for("dashboard") if "user_id" in session else url_for("login"))
 
 # ----------------------------
 # App Setup
