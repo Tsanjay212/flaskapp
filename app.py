@@ -13,6 +13,31 @@ from credits import get_credits, set_credits, add_credits, deduct_credits
 from flask_session import Session
 import redis
 
+#---------------------------
+import logging
+import sys
+
+# Log file path (inside the container)
+log_file = '/opt/flaskapp/logs/flaskapp.log'
+
+# Ensure the log directory exists
+if not os.path.exists('/opt/flaskapp/logs/'):
+    os.makedirs('/opt/flaskapp/logs/')
+
+# Set up logging to write to both stdout (for Docker) and file
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),  # Log to stdout (Docker log)
+        logging.FileHandler(log_file)  # Log to file inside the container
+    ]
+)
+
+#-----------------------
+
+
+
 
 # ----------------------------
 # App Setup
@@ -240,7 +265,7 @@ def send_sms():
 
     # Send SMS API Logic (same as before)
     api_url = "https://japi.instaalerts.zone/httpapi/JsonReceiver"
-    api_key = "A8CtOgAdEUfuWjFLlvwAOQ"
+    api_key = "A8CtOgAdEUfuWjFLlvwAOQ=="
 
     payload = {
         "ver": "1.0",
@@ -262,7 +287,7 @@ def send_sms():
             status = "Sent"
     except Exception as e:
         status = str(e)
-
+  
     # Log the SMS into the database
     conn = get_db()
     cursor = conn.cursor()
