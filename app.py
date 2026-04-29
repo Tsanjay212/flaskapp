@@ -16,6 +16,7 @@ import redis
 #---------------------------
 import logging
 import sys
+import os  # You missed importing the os module
 
 # Log file path (inside the container)
 log_file = '/opt/flaskapp/logs/flaskapp.log'
@@ -33,10 +34,6 @@ logging.basicConfig(
         logging.FileHandler(log_file)  # Log to file inside the container
     ]
 )
-
-#-----------------------
-
-
 
 
 # ----------------------------
