@@ -6,6 +6,7 @@ services:
     container_name: flaskapp
     ports:
       - "8000:8000"
+
     environment:
       MYSQL_HOST: flask-mariadb-db.cnwcmsquw4d7.ap-south-2.rds.amazonaws.com
       MYSQL_USER: flaskdb
@@ -16,9 +17,10 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: Tsanjay212
 
-      # 🔥 IMPORTANT: stable session key
       FLASK_SECRET_KEY: "supersecretkey"
 
-  
+    # ✅ THIS IS THE MOST IMPORTANT PART
+    volumes:
+      - /opt/flaskapp/logs:/opt/flaskapp/logs
 
     restart: always
