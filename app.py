@@ -12,6 +12,7 @@ from credits import get_credits, set_credits, add_credits, deduct_credits
 
 from flask_session import Session
 import redis
+import logging
 
 
 
@@ -22,6 +23,40 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+
+
+# ----------------------------
+# Logging Setup (FINAL FIXED)
+# ----------------------------
+log_dir = "/opt/flaskapp/logs"
+os.makedirs(log_dir, exist_ok=True)
+
+log_file = os.path.join(log_dir, "flaskapp.log")
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# File handler (for Promtail)
+file_handler = logging.FileHandler(log_file)
+file_handler.setFormatter(logging.Formatter(
+    "%(asctime)s %(levelname)s %(message)s"
+))
+logger.addHandler(file_handler)
+
+# Console handler (for Docker logs)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter(
+    "%(asctime)s %(levelname)s %(message)s"
+))
+logger.addHandler(console_handler)
+
+# Gunicorn integration (IMPORTANT)
+if __name__ != "__main__":
+    gunicorn_logger = logging.getLogger("gunicorn.error")
+    logger.handlers = gunicorn_logger.handlers + [file_handler]
+    logger.setLevel(gunicorn_logger.level)
+
+logger.info("Flask application started")
 
 
 # ----------------------------
@@ -55,12 +90,16 @@ DB_PASSWORD = os.environ.get("MYSQL_PASSWORD", "Tsanjay212")
 DB_NAME = os.environ.get("MYSQL_DB", "sanreach")
 
 def get_db():
-    return mysql.connector.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME
-    )
+    try:
+        return mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
+        )
+    except Exception as e:
+        logger.error(f"Database connection error: {str(e)}")
+        raise
 
 # ----------------------------
 # Utilities
@@ -69,21 +108,23 @@ def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if "user_id" not in session:
+            logger.warning("Unauthorized access attempt")
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapper
 
+
 def generate_dlt_id():
-    """Generate a 10-digit DLT ID starting with 212"""
     return "212" + "".join(str(random.randint(0, 9)) for _ in range(7))
 
-from functools import wraps
+
 from flask import abort
 
 def admin_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if session.get("role") != "admin":
+            logger.warning("Non-admin tried to access admin route")
             return abort(403)
         return f(*args, **kwargs)
     return wrapper
@@ -93,13 +134,17 @@ def admin_required(f):
 # ----------------------------
 @app.route("/")
 def home():
+    logger.info("Home accessed")
     return redirect(url_for("dashboard") if "user_id" in session else url_for("login"))
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
+
+        logger.info(f"Login attempt: {username}")
 
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
@@ -113,15 +158,18 @@ def login():
             session["username"] = user["username"]
             session["role"] = user.get("role", "user")
 
-            # 🔥 ROLE BASED REDIRECT
+            logger.info(f"Login success: {username}")
+
             if user["role"] == "admin":
                 return redirect(url_for("admin_credits"))
 
             return redirect(url_for("dashboard"))
 
+        logger.warning(f"Login failed: {username}")
         flash("Invalid credentials", "danger")
 
     return render_template("auth.html")
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -129,6 +177,8 @@ def register():
         username = request.form.get("username")
         email = request.form.get("email")
         password = generate_password_hash(request.form.get("password"))
+
+        logger.info(f"Registration attempt: {username}")
 
         conn = get_db()
         cursor = conn.cursor()
@@ -138,17 +188,22 @@ def register():
                 (username, email, password)
             )
             conn.commit()
+            logger.info(f"User registered: {username}")
             flash("Account created. Please login.", "success")
             return redirect(url_for("login"))
-        except:
+        except Exception as e:
+            logger.error(f"Registration failed: {username} - {str(e)}")
             flash("User already exists", "danger")
+
         cursor.close()
         conn.close()
 
     return render_template("auth.html")
 
+
 @app.route("/logout")
 def logout():
+    logger.info(f"Logout: {session.get('username')}")
     session.clear()
     return redirect(url_for("login"))
 
@@ -158,6 +213,7 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    logger.info(f"Dashboard accessed by {session.get('username')}")
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
@@ -231,6 +287,7 @@ def send_sms():
     number = request.form.get("number")
     message_text = request.form.get("message")
     template_id = request.form.get("template_id")
+    logger.info(f"User {session.get('username')} sending SMS to {number}")
 
     # Check if user has enough credits
     if not deduct_credits(session["user_id"], 1):  # Deduct 1 credit per SMS
