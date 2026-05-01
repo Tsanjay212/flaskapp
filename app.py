@@ -34,7 +34,7 @@ os.makedirs(log_dir, exist_ok=True)
 log_file = os.path.join(log_dir, "flaskapp.log")
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # File handler (for Promtail)
 file_handler = logging.FileHandler(log_file)
